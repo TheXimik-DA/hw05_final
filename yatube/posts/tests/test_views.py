@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.core.cache import cache
 
-from posts.models import Group, Post
+from posts.models import Group, Post, Follow
 
 User = get_user_model()
 
@@ -51,6 +52,7 @@ class TaskPagesTests(TestCase):
         }
         for reverse_name, template in templates_pages_names.items():
             with self.subTest(template=template):
+                cache.clear()
                 response = self.authorized_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
 
@@ -64,6 +66,7 @@ class TaskPagesTests(TestCase):
 
     def test_index_page_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
+        cache.clear()
         response = self.authorized_client.get(reverse('posts:index'))
         post = response.context['page_obj'][0].text
         self.assertEqual(post, 'Тестовый текст')
@@ -83,3 +86,96 @@ class TaskPagesTests(TestCase):
                     kwargs={'username': 'tigr'})))
         user = response.context['page_obj'][0].author
         self.assertEqual(user, self.user)
+
+    def test_cache_index_page(self):
+        """Проверка сохранения кэша для index."""
+        new_post = Post.objects.create(
+            author=self.user,
+            text='Проверка кэша'
+        )
+        cache.clear()
+        response = self.client.get(reverse('posts:index'))
+        self.assertIn(new_post, response.context['page_obj'])
+        new_post.delete()
+        new_response = self.client.get(reverse('posts:index'))
+        self.assertEqual(response.content, new_response.content)
+
+
+class FollowTestCase(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='FollowUser')
+        cls.author = User.objects.create_user(username='Author')
+        cls.group = Group.objects.create(
+            title='Test Group',
+            slug='FollowSlug',
+            description='TestDescr'
+        )
+        cls.post = Post.objects.create(
+            text='Test Text Follow',
+            author=cls.user,
+            group=cls.group
+        )
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
+
+    def test_follow_authorized_author(self):
+        """Проверка, что авторизованный пользователь может подписаться."""
+        cache.clear()
+        response = self.authorized_client.post(
+            reverse('posts:profile_follow', kwargs={
+                'username': self.author.username
+            })
+        )
+        self.assertTrue(
+            Follow.objects.filter(user=self.user, author=self.author).exists()
+        )
+        follow = Follow.objects.latest('id')
+        self.assertEqual(follow.user, self.user)
+        self.assertEqual(follow.author, self.author)
+        self.assertRedirects(
+            response, reverse('posts:profile',
+                              kwargs={'username': self.author.username}))
+
+    def test_unfollow_authorized_author(self):
+        """Проверка, что авторизованный пользователь может отписаться."""
+        Follow.objects.create(
+            user=self.user, author=self.author
+        )
+        response = self.authorized_client.post(
+            reverse('posts:profile_unfollow',
+                    kwargs={'username': self.author.username})
+        )
+        self.assertEqual(Follow.objects.count(), 0)
+        self.assertRedirects(
+            response, reverse('posts:profile',
+                              kwargs={'username': self.author.username}))
+
+    def test_correct_context_follow(self):
+        """Проверка, что новая запись появляется у подписчиков."""
+        Post.objects.create(
+            author=self.author,
+            text='NNNN',
+        )
+        Follow.objects.create(
+            user=self.user,
+            author=self.author
+        )
+        response = self.authorized_client.get(
+            reverse('posts:follow_index')
+        )
+        self.assertEqual(len(response.context['page_obj']), 1)
+        self.assertEqual(response.context['page_obj'][0].author, self.author)
+
+    def test_correct_context_unfollow(self):
+        """Проверка, что у пользователя не появляется запись,
+         тех на кого он не подписан."""
+        Post.objects.create(
+            author=self.author,
+            text='ASDA'
+        )
+        response = self.authorized_client.get(
+            reverse('posts:follow_index')
+        )
+        self.assertEqual(len(response.context['page_obj']), 0)

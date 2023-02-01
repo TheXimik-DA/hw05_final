@@ -78,6 +78,8 @@ class StaticURLTests(TestCase):
                 self.author),
             (self.urls.get('post create'), 'posts/create_post.html',
                 self.author),
+            (self.urls.get('nonexist'), 'core/404.html',
+                self.author)
         )
         for address, template, client in templates:
             with self.subTest(address=address):
