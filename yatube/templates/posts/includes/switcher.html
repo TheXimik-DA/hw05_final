@@ -1,0 +1,25 @@
+{% load static %}
+{% if user.is_authenticated %}
+<div class="container py-5">
+  <div class="row my-3">
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a 
+          class="nav-link {% if index %}active{% endif %}"
+          href="{% url 'posts:index' %}"
+        >
+          <span style="color:red">Все авторы</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a 
+           class="nav-link {% if follow %}active{% endif %}"
+           href="{% url 'posts:follow_index' %}"
+        >
+          <span style="color:red">Избранные авторы</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>
+{% endif %}

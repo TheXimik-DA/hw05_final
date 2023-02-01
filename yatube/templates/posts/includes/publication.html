@@ -1,0 +1,11 @@
+<p>
+  <ul>
+    <li>
+      <b>Автор:</b> {{ post.author }}{{ post.author.get_full_name }}
+    </li>
+    <li>
+      <b>Дата публикации:</b> {{ post.pub_date|date:"d E Y" }}
+    </li>
+  </ul>
+  <p>{{ post.text }}</p>
+</p>

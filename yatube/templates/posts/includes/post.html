@@ -1,0 +1,10 @@
+{% load thumbnail %}
+<ul>
+  <li> <b>Автор:</b> {{ post.author }}
+    <a href="{% url 'posts:profile' post.author.username %}"> <span style="color:red">Все посты пользователя</span></a></li>
+  <li> <b>Дата публикации:</b> {{ post.pub_date|date:"d E Y" }} </li>
+</ul>
+{% thumbnail post.image "960x339" crop="center" upscale=True as im %}
+  <img class="card-img my-2" src="{{ im.url }}">
+{% endthumbnail %}
+<p> {{ post.text|linebreaksbr }} </p>

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load thumbnail %}
+{% block title %}
+  Пост {{ posts|truncatechars:30 }}
+{% endblock title %}
+{% block content %}
+  <div class="container py-5">
+    <div class="row">
+      <aside class="col-12 col-md-2">
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">
+            <center>
+              <b>Дата публикации:</b>
+            </center>
+            <center>
+              {{ posts.pub_date|date:"d E Y" }}
+            </center>
+          </li>
+          {% if posts.group %}
+            <li class="list-group-item">
+              <center>
+                <b>Группа: </b>
+                {{ posts.group.title }}
+                <a href="{% url 'posts:group_list' posts.group.slug %}"><center><span style="color:red">Все записи группы</span></center></a>
+              </center>
+          {% endif %}
+        </li>
+        <li class="list-group-item">
+          <center>
+            <b>Автор: </b>
+          </center>
+          <center>
+            {{ post.author }}
+            {{ posts.author.username }}
+          </center>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <center>
+            <b>Всего постов автора:
+              {{ posts.author.posts.count }}</b>
+          </center>
+          {{ post_number }}
+        </li>
+        <center>
+          <li class="list-group-item">
+            <a href="{% url 'posts:profile' posts.author.username %}"><span style="color:red">Все посты пользователя</span></a>
+          </center>
+        </li>
+      </ul>
+    </aside>
+    <article class="col-12 col-md-9">
+      {% thumbnail posts.image "960x339" crop="center" upscale=True as im %}
+        <img class="card-img my-2" src="{{ im.url }}">
+      {% endthumbnail %}
+      <p>
+        <h5>{{ posts.text|linebreaksbr }}</h5>
+      </p>
+      {% if request.user == posts.author %}
+        <a class="btn btn-primary"
+          href="{% url 'posts:post_edit' posts.id %}">Редактировать</a>
+      {% endif %}
+      {% include "posts/includes/comment.html" %}
+    </article>
+  </div>
+  </div>
+{% endblock content %}
