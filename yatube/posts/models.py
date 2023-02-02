@@ -10,6 +10,7 @@ class Group(models.Model):
     description = models.TextField("Описание")
 
     class Meta:
+        verbose_name = 'Группа',
         verbose_name_plural = 'Группы'
 
     def __str__(self):
@@ -51,6 +52,7 @@ class Post(models.Model):
 
     class Meta:
         ordering = ['-pub_date']
+        verbose_name = 'Пост',
         verbose_name_plural = 'Посты'
 
     def __str__(self) -> str:
@@ -64,17 +66,21 @@ class Comment(models.Model):
         null=True,
         on_delete=models.CASCADE,
         related_name='comments',
-        verbose_name='Комментарий'
+        verbose_name='Пост'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='comments',
-        verbose_name='Автор публикации',
+        verbose_name='Автор комментария',
     )
     text = models.TextField(
         'Текст комментария',
         help_text='Введите текст комменатрия'
+    )
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата публикации комментария'
     )
     created = models.DateTimeField(
         auto_now_add=True,
@@ -82,9 +88,11 @@ class Comment(models.Model):
     )
 
     class Meta:
-        ordering = ('-created',)
+        ordering = ['-pub_date']
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.text[:15]
 
 
@@ -93,13 +101,11 @@ class Follow(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='follower',
-        verbose_name='Подписчики'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='following',
-        verbose_name='Подписки'
     )
 
     class Meta:
@@ -109,3 +115,8 @@ class Follow(models.Model):
                 name='unique_author_user_following',
             )
         ]
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+
+    def __str__(self) -> str:
+        return self.text
