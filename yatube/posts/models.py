@@ -78,17 +78,13 @@ class Comment(models.Model):
         'Текст комментария',
         help_text='Введите текст комменатрия'
     )
-    pub_date = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата публикации комментария'
-    )
     created = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата публикации'
     )
 
     class Meta:
-        ordering = ['-pub_date']
+        ordering = ['-created']
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
 
