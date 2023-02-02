@@ -62,26 +62,19 @@ def post_detail(request, post_id):
     return render(
         request,
         'posts/post_detail.html',
-        {'post': post, 'form': form, 'comments': comments}
+        {'posts': post, 'form': form, 'comments': comments}
     )
 
 
 @login_required
 def post_create(request):
-    template = 'posts/create_post.html'
-    form = PostForm(
-        request.POST or None,
-        files=request.FILES or None,
-    )
-    if form.is_valid():
-        obj = form.save(commit=False)
-        obj.author = request.user
-        obj.save()
-        return redirect('posts:profile', obj.author)
-    context = {
-        'form': form,
-        'is_edit': False}
-    return render(request, template, context)
+    form = PostForm(request.POST or None, files=request.FILES or None,)
+    if not form.is_valid():
+        return render(request, 'posts/create_post.html', {'form': form})
+    obj = form.save(commit=False)
+    obj.author = request.user
+    obj.save()
+    return redirect('posts:profile', obj.author.username)
 
 
 @login_required
@@ -127,7 +120,7 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     user = request.user
-    author = get_object_or_404(User, username=username)
+    author = get_object_or_404(username=username)
     is_follower = Follow.objects.filter(user=user, author=author)
     if user != author and not is_follower.exists():
         Follow.objects.create(user=user, author=author)
