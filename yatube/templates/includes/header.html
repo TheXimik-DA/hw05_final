@@ -18,23 +18,23 @@
           </a>
         </li>
         {% if user.is_authenticated %}
-        <li class="nav-item"> 
-          <a class="nav-link {% if view_name  == 'posts:post_create' or view_name  == 'posts:post_edit' %}active{% endif %}"
-            href="{% url 'posts:post_create' %}"> <span style="color:yellow">Новая запись</span>
-          </a>
-        </li>
-        <li class="nav-item"> 
-          <a class="nav-link link-light {% if view_name  == '' %}active{% endif %}"
-            href="{% url 'users:password_change' %}"><span style="color:cyan">Изменить пароль</span>
-          </a>
-        </li>
-        <li class="nav-item"> 
-          <a class="nav-link link-light"
-            href="{% url 'users:logout' %}"><span style="color:red">Выйти</span>
-          </a>
-        </li>
-        <li><a class="nav-link"><span style="color:cyan">Пользователь: </span><span style="color:red">{{ user.username }}</span></a>
-        </li>
+          <li class="nav-item"> 
+            <a class="nav-link {% if view_name  == 'posts:post_create' or view_name  == 'posts:post_edit' %}active{% endif %}"
+              href="{% url 'posts:post_create' %}"> <span style="color:yellow">Новая запись</span>
+            </a>
+          </li>
+          <li class="nav-item"> 
+            <a class="nav-link link-light {% if view_name  == '' %}active{% endif %}"
+              href="{% url 'users:password_change' %}"><span style="color:cyan">Изменить пароль</span>
+            </a>
+          </li>
+          <li class="nav-item"> 
+            <a class="nav-link link-light"
+              href="{% url 'users:logout' %}"><span style="color:red">Выйти</span>
+            </a>
+          </li>
+          <li><a class="nav-link"><span style="color:cyan">Пользователь: </span><span style="color:red">{{ user.username }}</span></a>
+          </li>
         {% else %}
           <li class="nav-item"> 
             <a class="nav-link link-light {% if view_name  == 'users:login' %}active{% endif %}"
