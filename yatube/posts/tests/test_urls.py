@@ -1,64 +1,86 @@
 from http import HTTPStatus
 
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from posts.models import Group, Post, User
 
-User = get_user_model()
+NOT_FOUNT_URL = '/existing_page/'
+GROUP_SLUG = 'test_slug'
+USERNAME_AUTHOR = 'Author'
+USERNAME_USER = 'Auth_user'
+FOLLOW_URL = reverse('posts:follow_index')
+INDEX_URL = reverse('posts:index')
+POST_CREATE_URL = reverse('posts:post_create')
+GROUP_LIST_URL = reverse('posts:group_list', kwargs={'slug': GROUP_SLUG})
+PROFILE_URL = reverse('posts:profile', kwargs={'username': USERNAME_AUTHOR})
+PROFILE_FOLLOW_URL = reverse('posts:profile_follow',
+                             kwargs={'username': USERNAME_USER})
+PROFILE_UNFOLLOW_URL = reverse('posts:profile_unfollow',
+                               kwargs={'username': USERNAME_USER})
+HTTP_OK = HTTPStatus.OK.value
+HTTP_FOUND = HTTPStatus.FOUND.value
+HTTP_NOT_FOUND = HTTPStatus.NOT_FOUND.value
 
 
 class StaticURLTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='User')
-        cls.user_author = User.objects.create_user(username='Author')
+        cls.user = User.objects.create_user(username=USERNAME_USER)
+        cls.user_author = User.objects.create_user(username=USERNAME_AUTHOR)
         cls.group = Group.objects.create(
             title='Тестовая группа',
-            slug='Slug',
+            slug=GROUP_SLUG,
             description='Тестовое описание',
         )
         cls.post = Post.objects.create(
             author=cls.user_author,
             text='Тестовая запись для тестов',
         )
-        cls.guest_client = Client()
-        cls.authorized_client = Client()
+        cls.POST_DETAIL_URL = reverse('posts:post_detail',
+                                      kwargs={'post_id': cls.post.pk})
+        cls.POST_EDIT_URL = reverse('posts:post_edit',
+                                    kwargs={'post_id': cls.post.pk})
+        cls.POST_COMMENT_URL = reverse('posts:add_comment',
+                                       kwargs={'post_id': cls.post.pk})
+        cls.guest = Client()
+        cls.another = Client()
         cls.author = Client()
-        cls.authorized_client.force_login(cls.user)
+        cls.another.force_login(cls.user)
         cls.author.force_login(cls.user_author)
-        cls.urls = {
-            '/': '/',
-            'group': '/group/Slug/',
-            'profile': '/profile/Author/',
-            'posts': '/posts/1/',
-            'post edit': '/posts/1/edit/',
-            'post create': '/create/',
-            'not found': '/unexisting_page/'
-        }
 
-    def test_http_statuses(self) -> None:
+    def test_http_statuses(self):
         httpstatus = (
-            (self.urls.get('/'), HTTPStatus.OK.value,
-                self.guest_client),
-            (self.urls.get('group'), HTTPStatus.OK.value,
-                self.guest_client),
-            (self.urls.get('profile'), HTTPStatus.OK.value,
-                self.guest_client),
-            (self.urls.get('posts'), HTTPStatus.OK.value,
-                self.guest_client),
-            (self.urls.get('post edit'), HTTPStatus.OK.value,
+            (INDEX_URL, HTTP_OK,
+                self.guest),
+            (GROUP_LIST_URL, HTTP_OK,
+                self.guest),
+            (PROFILE_URL, HTTP_OK,
+                self.guest),
+            (self.POST_DETAIL_URL, HTTP_OK,
+                self.guest),
+            (self.POST_EDIT_URL, HTTP_OK,
                 self.author),
-            (self.urls.get('post edit'), HTTPStatus.FOUND.value,
-                self.guest_client),
-            (self.urls.get('post create'), HTTPStatus.OK.value,
+            (self.POST_EDIT_URL, HTTP_FOUND,
+                self.guest),
+            (POST_CREATE_URL, HTTP_OK,
                 self.author),
-            (self.urls.get('post create'), HTTPStatus.FOUND.value,
-                self.guest_client),
-            (self.urls.get('not found'), HTTPStatus.NOT_FOUND.value,
-                self.guest_client)
+            (POST_CREATE_URL, HTTP_FOUND,
+                self.guest),
+            (NOT_FOUNT_URL, HTTP_NOT_FOUND,
+                self.guest),
+            (FOLLOW_URL, HTTP_OK,
+                self.another),
+            (FOLLOW_URL, HTTP_FOUND,
+                self.guest),
+            (PROFILE_FOLLOW_URL, HTTP_FOUND,
+                self.author),
+            (PROFILE_UNFOLLOW_URL, HTTP_FOUND,
+                self.author),
+            (self.POST_COMMENT_URL, HTTP_FOUND,
+                self.author),
+
         )
         for address, status, client in httpstatus:
             with self.subTest(address=address):
@@ -66,35 +88,43 @@ class StaticURLTests(TestCase):
 
     def test_templates(self) -> None:
         templates = (
-            (self.urls.get('/'), 'posts/index.html',
-                self.guest_client),
-            (self.urls.get('group'), 'posts/group_list.html',
-                self.guest_client),
-            (self.urls.get('profile'), 'posts/profile.html',
-                self.guest_client),
-            (self.urls.get('posts'), 'posts/post_detail.html',
-                self.guest_client),
-            (self.urls.get('post edit'), 'posts/create_post.html',
+            (INDEX_URL, 'posts/index.html',
+                self.guest),
+            (GROUP_LIST_URL, 'posts/group_list.html',
+                self.guest),
+            (PROFILE_URL, 'posts/profile.html',
+                self.guest),
+            (self.POST_DETAIL_URL, 'posts/post_detail.html',
+                self.guest),
+            (self.POST_EDIT_URL, 'posts/create_post.html',
                 self.author),
-            (self.urls.get('post create'), 'posts/create_post.html',
+            (POST_CREATE_URL, 'posts/create_post.html',
                 self.author),
-            (self.urls.get('nonexist'), 'core/404.html',
-                self.author)
+            (NOT_FOUNT_URL, 'core/404.html',
+                self.author),
+            (FOLLOW_URL, 'posts/follow.html',
+                self.author),
         )
         for address, template, client in templates:
             with self.subTest(address=address):
                 self.assertTemplateUsed(client.get(address), template)
 
-    def test_redirects(self) -> None:
+    def test_redirects(self):
         redirects = (
-            (self.urls.get('post edit'),
-                reverse('posts:post_detail', kwargs={'post_id': self.post.id}),
-                self.authorized_client),
-            (self.urls.get('post edit'),
-                '/auth/login/?next=%2Fposts%2F1%2Fedit%2F', self.guest_client),
-            (self.urls.get(
-                'post create'), '/auth/login/?next=/create/',
-                self.guest_client),
+            (self.POST_EDIT_URL, reverse('users:login')+'?next='
+             + self.POST_EDIT_URL,
+             self.guest),
+            (self.POST_EDIT_URL, self.POST_DETAIL_URL, self.another),
+            (POST_CREATE_URL, reverse('users:login')+'?next='
+             + POST_CREATE_URL, self.guest),
+            (self.POST_COMMENT_URL, reverse('users:login')+'?next='
+             + self.POST_COMMENT_URL, self.guest),
+            (FOLLOW_URL, reverse('users:login')+'?next='
+             + FOLLOW_URL, self.guest),
+            (PROFILE_FOLLOW_URL, reverse('users:login')+'?next='
+             + PROFILE_FOLLOW_URL, self.guest),
+            (PROFILE_UNFOLLOW_URL, reverse('users:login')+'?next='
+             + PROFILE_UNFOLLOW_URL, self.guest)
         )
         for address, redirect, client in redirects:
             with self.subTest(address=address):

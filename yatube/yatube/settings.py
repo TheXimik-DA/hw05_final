@@ -66,7 +66,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'yatube.wsgi.application'
 
 
-MAX_RECORDS = 15
+MAX_RECORDS = 10
 
 
 DATABASES = {
