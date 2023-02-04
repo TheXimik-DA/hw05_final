@@ -111,19 +111,19 @@ class StaticURLTests(TestCase):
 
     def test_redirects(self):
         redirects = (
-            (self.POST_EDIT_URL, reverse('users:login')+'?next='
+            (self.POST_EDIT_URL, reverse('users:login') + '?next='
              + self.POST_EDIT_URL,
              self.guest),
             (self.POST_EDIT_URL, self.POST_DETAIL_URL, self.another),
-            (POST_CREATE_URL, reverse('users:login')+'?next='
+            (POST_CREATE_URL, reverse('users:login') + '?next='
              + POST_CREATE_URL, self.guest),
-            (self.POST_COMMENT_URL, reverse('users:login')+'?next='
+            (self.POST_COMMENT_URL, reverse('users:login') + '?next='
              + self.POST_COMMENT_URL, self.guest),
-            (FOLLOW_URL, reverse('users:login')+'?next='
+            (FOLLOW_URL, reverse('users:login') + '?next='
              + FOLLOW_URL, self.guest),
-            (PROFILE_FOLLOW_URL, reverse('users:login')+'?next='
+            (PROFILE_FOLLOW_URL, reverse('users:login') + '?next='
              + PROFILE_FOLLOW_URL, self.guest),
-            (PROFILE_UNFOLLOW_URL, reverse('users:login')+'?next='
+            (PROFILE_UNFOLLOW_URL, reverse('users:login') + '?next='
              + PROFILE_UNFOLLOW_URL, self.guest)
         )
         for address, redirect, client in redirects:

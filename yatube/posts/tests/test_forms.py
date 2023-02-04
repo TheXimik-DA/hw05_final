@@ -90,7 +90,7 @@ class PostCreateFormTests(TestCase):
         self.assertTrue(
             Post.objects.filter(
                 text='Тестовый текст',
-                image=f'posts/small.gif'
+                image='posts/small.gif',
             ).exists()
         )
         self.assertRedirects(
