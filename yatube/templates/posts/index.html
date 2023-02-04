@@ -1,22 +1,15 @@
 {% extends 'base.html' %}
-{% comment %} {% load thumbnail %} {% endcomment %}
 {% block title %} Последние обновления на сайте{% endblock title %}
 {% block content %}
   <div class="container py-5">
-    {% include 'posts/includes/switcher.html' %}
+    {% include 'posts/includes/switcher.html' with index=True %}
     {% load cache %}
       <h2>Последние обновления на сайте. </h2>
     {% cache 20 index_page %}
       {% for post in page_obj %}
         <article>
-          {% comment %} {% thumbnail post.image "960x339" crop="center" upscale=True as im %}
-            <img class="card-img my-2" src="{{ im.url }}">
-          {% endthumbnail %} {% endcomment %}
           {% include "posts/includes/post.html" %}
-          {% if post.group %}
-            <b>Группа:</b> {{ group.title }}
-            <a href="{% url 'posts:group_list' post.group.slug %}"><span style="color:red">Все записи группы.</span> </a>
-          {% endif %}
+          {% include "posts/includes/group_slug.html" %}
           {% if not forloop.last %}<hr>{% endif %}
       {% empty %}
         <h3>Отсутствуют записи. Поделитесь чем-нибудь!</h3>
