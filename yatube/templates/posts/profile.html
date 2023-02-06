@@ -37,12 +37,9 @@
         <div>{% include "posts/includes/publication.html" %}</div>
       </div>
       {% include "posts/includes/thumbnail.html" %}
-      <p>{{ post.text|linebreaksbr }}</p>
       <a href="{% url 'posts:post_detail' post.id %}"><span style="color:red">Подробная информация</span></a>
       <br>
-      {% if post.group %}
-        <a href="{% url 'posts:group_list' post.group.slug %}"><span style="color:red">Все записи группы</span></a>
-      {% endif %}
+      {% include "posts/includes/group_slug.html" %}
       {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}
     <div class="d-flex justify-content-center">
