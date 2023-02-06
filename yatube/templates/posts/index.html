@@ -4,15 +4,15 @@
   <div class="container py-5">
     {% include 'posts/includes/switcher.html' with index=True %}
     {% load cache %}
-      <h2>Последние обновления на сайте. </h2>
+    <h2>Последние обновления на сайте. </h2>
     {% cache 20 index_page %}
       {% for post in page_obj %}
         <article>
           {% include "posts/includes/post.html" %}
           {% include "posts/includes/group_slug.html" %}
           {% if not forloop.last %}<hr>{% endif %}
-      {% empty %}
-        <h3>Отсутствуют записи. Поделитесь чем-нибудь!</h3>
+        {% empty %}
+          <h3>Отсутствуют записи. Поделитесь чем-нибудь!</h3>
         </article>
       {% endfor %}
       {% include "posts/includes/paginator.html" %}

@@ -2,19 +2,19 @@
 {% block title %}
   {% if author.get_full_name %}
     {{ author.get_full_name }}
-  {% else %}
   {% endif %} Профиль  пользователя
 {% endblock title %}
 {% block content %}
   <div class="container py-5">
-    <h1>Все посты пользователя
-      {% if author.get_full_name %}{{ author.get_full_name }}{% endif %}
+    <h1>Все посты пользователя 
+      {% if author.get_full_name %} {{ author.get_full_name }}{% endif %}
     </h1>
     <h3>Всего постов:
       {{ page_obj.paginator.count }}
     </h3>
     <h5>Всего подписчиков: {{ author.following.count }} </h5>
-    <h5>Всего подписок: {{ author.follower.count }} </h5
+    <h5>Всего подписок: {{ author.follower.count }} </h5>
+    <h5>Всего комментариев: {{ author.comments.count }} </h5>
     {% if user != author and user.is_authenticated %}
       {% if following %}
         <a
@@ -34,11 +34,7 @@
     {% endif %}
     {% for post in page_obj %}
       <div class="card my-3">
-        <ul>
-          <li>
-            <b>Дата публикации:</b> {{ post.pub_date|date:'d E Y' }}
-          </li>
-        </ul>
+        <div>{% include "posts/includes/publication.html" %}</div>
       </div>
       {% include "posts/includes/thumbnail.html" %}
       <p>{{ post.text|linebreaksbr }}</p>

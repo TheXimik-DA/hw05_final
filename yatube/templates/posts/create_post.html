@@ -27,11 +27,7 @@
           enctype="multipart/form-data"
           >
             {% csrf_token %}
-            {% for field in form %}
-              <div class="form-group row my-3 p-3">
                 {% include "includes/fields.html" %}
-              </div>
-            {% endfor %}
             <div class="d-flex justify-content-end">
               <button type="submit" class="btn btn-primary">
                 {% if is_edit %}

@@ -3,25 +3,25 @@
   Пост| {{ posts.text|truncatechars:30 }}
 {% endblock title %}
 {% block content %}
+<h2>Подробная информация: </h2>
   <div class="container py-5">
     <div class="row">
       <aside class="col-12 col-md-2">
         <ul class="list-group list-group-flush">
           <li class="list-group-item">
-              <b>Дата публикации:</b>
+              Дата публикации:
               {{ posts.pub_date|date:"d E Y" }}
           </li>
           {% include "posts/includes/group_slug.html" %}
-            </li>
           <li class="list-group-item">
-            <b>Автор: </b>
+            Автор:
             {{ posts.author.username }}
           </li>
           <li class="list-group-item d-flex justify-content-between align-items-center">
-            <b>Всего постов автора:{{ posts.author.posts.count }}</b>
+            Всего постов автора:{{ posts.author.posts.count }}
           </li>
           <li class="list-group-item">
-            <a href="{% url 'posts:profile' posts.author.username %}"><span style="color:red">Все посты пользователя</span></a>
+            <a href="{% url 'posts:profile' posts.author.username %}">Все посты пользователя</a>
           </li>
         </ul>
       </aside>
