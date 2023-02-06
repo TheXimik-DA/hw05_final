@@ -1,8 +1,8 @@
+from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
-from django.core.cache import cache
 
-from posts.models import Group, Post, Follow, User
+from posts.models import Follow, Group, Post, User
 
 GROUP_SLUG = 'test_slug'
 USERNAME = 'tigr'
