@@ -97,11 +97,15 @@ class Follow(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='follower',
+        verbose_name='Подписчик',
+        help_text='Это подписчик',
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='following',
+        verbose_name='Автор',
+        help_text='Это автор',
     )
 
     class Meta:
@@ -115,6 +119,4 @@ class Follow(models.Model):
         verbose_name_plural = 'Подписки'
 
     def __str__(self) -> str:
-        return (
-            f'{self.user.username} subscribed to '
-            f'{self.author.username}')
+        return f'{self.user} подписан на {self.author}'

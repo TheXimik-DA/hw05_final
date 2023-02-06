@@ -3,7 +3,7 @@
   Пост| {{ posts.text|truncatechars:30 }}
 {% endblock title %}
 {% block content %}
-<h2>Подробная информация: </h2>
+{% block header %}Детали поста:{% endblock header%}
   <div class="container py-5">
     <div class="row">
       <aside class="col-12 col-md-2">
