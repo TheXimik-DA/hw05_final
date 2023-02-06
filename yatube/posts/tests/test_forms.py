@@ -1,6 +1,5 @@
 import shutil
 import tempfile
-
 from http import HTTPStatus
 
 from django.test import Client, TestCase, override_settings
