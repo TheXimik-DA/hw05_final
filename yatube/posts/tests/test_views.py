@@ -132,7 +132,8 @@ class TaskPagesTests(TestCase):
                     f'{url}?page=2'
                 )
                 self.assertEqual(
-                    len(response_second.context['page_obj']), settings.MAX_RECORDS
+                    len(response_second.context['page_obj']),
+                    settings.MAX_RECORDS
                 )
 
     def test_follow_authorized_author(self):

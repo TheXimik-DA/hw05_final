@@ -13,8 +13,14 @@ FOLLOW_URL = reverse('posts:follow_index')
 INDEX_URL = reverse('posts:index')
 POST_CREATE_URL = reverse('posts:post_create')
 GROUP_LIST_URL = reverse('posts:group_list', kwargs={'slug': GROUP_SLUG})
-PROFILE_URL_ANOTHER = reverse('posts:profile', kwargs={'username': USERNAME_USER})
-PROFILE_URL_AUTHOR = reverse('posts:profile', kwargs={'username': USERNAME_AUTHOR})
+PROFILE_URL_ANOTHER = reverse(
+    'posts:profile',
+    kwargs={'username': USERNAME_USER}
+)
+PROFILE_URL_AUTHOR = reverse(
+    'posts:profile',
+    kwargs={'username': USERNAME_AUTHOR}
+)
 PROFILE_FOLLOW_URL = reverse('posts:profile_follow',
                              kwargs={'username': USERNAME_USER})
 PROFILE_UNFOLLOW_URL = reverse('posts:profile_unfollow',
