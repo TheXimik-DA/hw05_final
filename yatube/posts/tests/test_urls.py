@@ -13,11 +13,16 @@ FOLLOW_URL = reverse('posts:follow_index')
 INDEX_URL = reverse('posts:index')
 POST_CREATE_URL = reverse('posts:post_create')
 GROUP_LIST_URL = reverse('posts:group_list', kwargs={'slug': GROUP_SLUG})
-PROFILE_URL = reverse('posts:profile', kwargs={'username': USERNAME_AUTHOR})
+PROFILE_URL_ANOTHER = reverse('posts:profile', kwargs={'username': USERNAME_USER})
+PROFILE_URL_AUTHOR = reverse('posts:profile', kwargs={'username': USERNAME_AUTHOR})
 PROFILE_FOLLOW_URL = reverse('posts:profile_follow',
                              kwargs={'username': USERNAME_USER})
 PROFILE_UNFOLLOW_URL = reverse('posts:profile_unfollow',
                                kwargs={'username': USERNAME_USER})
+PROFILE_FOLLOW_URL_ANOTHER = reverse('posts:profile_follow',
+                                     kwargs={'username': USERNAME_AUTHOR})
+PROFILE_UNFOLLOW_URL_ANOTHER = reverse('posts:profile_unfollow',
+                                       kwargs={'username': USERNAME_AUTHOR})
 HTTP_OK = HTTPStatus.OK.value
 HTTP_FOUND = HTTPStatus.FOUND.value
 HTTP_NOT_FOUND = HTTPStatus.NOT_FOUND.value
@@ -49,40 +54,86 @@ class StaticURLTests(TestCase):
         cls.author = Client()
         cls.another.force_login(cls.user)
         cls.author.force_login(cls.user_author)
-
-    def test_http_statuses(self):
-        httpstatus = (
+        cls.httpstatus_guest = (
             (INDEX_URL, HTTP_OK,
-                self.guest),
+             cls.guest),
             (GROUP_LIST_URL, HTTP_OK,
-                self.guest),
-            (PROFILE_URL, HTTP_OK,
-                self.guest),
-            (self.POST_DETAIL_URL, HTTP_OK,
-                self.guest),
-            (self.POST_EDIT_URL, HTTP_OK,
-                self.author),
-            (self.POST_EDIT_URL, HTTP_FOUND,
-                self.guest),
-            (POST_CREATE_URL, HTTP_OK,
-                self.author),
+             cls.guest),
+            (PROFILE_URL_AUTHOR, HTTP_OK,
+             cls.guest),
+            (cls.POST_DETAIL_URL, HTTP_OK,
+             cls.guest),
+            (cls.POST_EDIT_URL, HTTP_FOUND,
+             cls.guest),
             (POST_CREATE_URL, HTTP_FOUND,
-                self.guest),
+             cls.guest),
             (NOT_FOUNT_URL, HTTP_NOT_FOUND,
-                self.guest),
-            (FOLLOW_URL, HTTP_OK,
-                self.another),
+             cls.guest),
             (FOLLOW_URL, HTTP_FOUND,
-                self.guest),
+             cls.guest),
             (PROFILE_FOLLOW_URL, HTTP_FOUND,
-                self.author),
+             cls.guest),
             (PROFILE_UNFOLLOW_URL, HTTP_FOUND,
-                self.author),
-            (self.POST_COMMENT_URL, HTTP_FOUND,
-                self.author),
-
+             cls.guest),
         )
-        for address, status, client in httpstatus:
+        cls.httpstatus_author = (
+            (cls.POST_EDIT_URL, HTTP_OK,
+             cls.author),
+            (POST_CREATE_URL, HTTP_OK,
+             cls.author),
+            (PROFILE_FOLLOW_URL, HTTP_FOUND,
+             cls.author),
+            (PROFILE_UNFOLLOW_URL, HTTP_FOUND,
+             cls.author),
+            (cls.POST_COMMENT_URL, HTTP_FOUND,
+             cls.author),
+        )
+        cls.httpstatus_another = (
+            (FOLLOW_URL, HTTP_OK,
+             cls.another),
+            (PROFILE_FOLLOW_URL, HTTP_FOUND,
+             cls.another),
+            (PROFILE_UNFOLLOW_URL, HTTP_NOT_FOUND,
+             cls.another),
+        )
+        cls.redirects_guest = (
+            (cls.POST_EDIT_URL, reverse('users:login') + '?next='
+             + cls.POST_EDIT_URL,
+             cls.guest),
+            (POST_CREATE_URL, reverse('users:login') + '?next='
+             + POST_CREATE_URL, cls.guest),
+            (cls.POST_COMMENT_URL, reverse('users:login') + '?next='
+             + cls.POST_COMMENT_URL, cls.guest),
+            (FOLLOW_URL, reverse('users:login') + '?next='
+             + FOLLOW_URL, cls.guest),
+            (PROFILE_FOLLOW_URL, reverse('users:login') + '?next='
+             + PROFILE_FOLLOW_URL, cls.guest),
+            (PROFILE_UNFOLLOW_URL, reverse('users:login') + '?next='
+             + PROFILE_UNFOLLOW_URL, cls.guest)
+        )
+        cls.redirects_author = (
+            (cls.POST_COMMENT_URL, cls.POST_DETAIL_URL, cls.author),
+            (PROFILE_FOLLOW_URL, PROFILE_URL_ANOTHER, cls.author),
+            (PROFILE_UNFOLLOW_URL, PROFILE_URL_ANOTHER, cls.author),
+        )
+        cls.redirects_another = (
+            (cls.POST_COMMENT_URL, cls.POST_DETAIL_URL, cls.another),
+            (PROFILE_FOLLOW_URL_ANOTHER, PROFILE_URL_AUTHOR, cls.another),
+            (PROFILE_UNFOLLOW_URL_ANOTHER, PROFILE_URL_AUTHOR, cls.another)
+        )
+
+    def test_http_statuses_guest(self):
+        for address, status, client in self.httpstatus_guest:
+            with self.subTest(address=address):
+                self.assertEqual(client.get(address).status_code, status)
+
+    def test_http_statuses_author(self):
+        for address, status, client in self.httpstatus_author:
+            with self.subTest(address=address):
+                self.assertEqual(client.get(address).status_code, status)
+
+    def test_http_statuses_another(self):
+        for address, status, client in self.httpstatus_another:
             with self.subTest(address=address):
                 self.assertEqual(client.get(address).status_code, status)
 
@@ -92,7 +143,7 @@ class StaticURLTests(TestCase):
                 self.guest),
             (GROUP_LIST_URL, 'posts/group_list.html',
                 self.guest),
-            (PROFILE_URL, 'posts/profile.html',
+            (PROFILE_URL_AUTHOR, 'posts/profile.html',
                 self.guest),
             (self.POST_DETAIL_URL, 'posts/post_detail.html',
                 self.guest),
@@ -109,25 +160,20 @@ class StaticURLTests(TestCase):
             with self.subTest(address=address):
                 self.assertTemplateUsed(client.get(address), template)
 
-    def test_redirects(self):
-        redirects = (
-            (self.POST_EDIT_URL, reverse('users:login') + '?next='
-             + self.POST_EDIT_URL,
-             self.guest),
-            (self.POST_EDIT_URL, self.POST_DETAIL_URL, self.another),
-            (POST_CREATE_URL, reverse('users:login') + '?next='
-             + POST_CREATE_URL, self.guest),
-            (self.POST_COMMENT_URL, reverse('users:login') + '?next='
-             + self.POST_COMMENT_URL, self.guest),
-            (FOLLOW_URL, reverse('users:login') + '?next='
-             + FOLLOW_URL, self.guest),
-            (PROFILE_FOLLOW_URL, reverse('users:login') + '?next='
-             + PROFILE_FOLLOW_URL, self.guest),
-            (PROFILE_UNFOLLOW_URL, reverse('users:login') + '?next='
-             + PROFILE_UNFOLLOW_URL, self.guest)
-        )
-        for address, redirect, client in redirects:
+    def test_redirects_guest(self):
+        for address, redirect, client in self.redirects_guest:
             with self.subTest(address=address):
                 self.assertRedirects(
-                    client.get(address, follow=True), redirect
-                )
+                    client.get(address, follow=True), redirect)
+
+    def test_redirects_author(self):
+        for address, redirect, client in self.redirects_author:
+            with self.subTest(address=address):
+                self.assertRedirects(
+                    client.get(address, follow=True), redirect)
+
+    def test_redirects_another(self):
+        for address, redirect, client in self.redirects_another:
+            with self.subTest(address=address):
+                self.assertRedirects(
+                    client.get(address, follow=True), redirect)

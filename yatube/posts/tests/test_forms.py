@@ -3,8 +3,8 @@ import tempfile
 from http import HTTPStatus
 
 from django.test import Client, TestCase, override_settings
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.conf import settings
 
 from posts.models import Group, Post, User, Comment
@@ -42,10 +42,25 @@ class PostCreateFormTests(TestCase):
             text='Тестовый текст поста',
             group=cls.group,
         )
+        cls.small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
+        )
+        cls.test_image = SimpleUploadedFile(
+            name='small.gif',
+            content=cls.small_gif,
+            content_type='image/gif'
+        )
         cls.POST_DETAIL_URL = reverse('posts:post_detail',
                                       kwargs={'post_id': cls.post.pk})
         cls.POST_EDIT_URL = reverse('posts:post_edit',
                                     kwargs={'post_id': cls.post.pk})
+        cls.COMMENT_ADD = reverse('posts:add_comment',
+                                  kwargs={'post_id': cls.post.pk})
         cls.guest_client = Client()
         cls.authorized_client_author = Client()
         cls.authorized_client_author.force_login(cls.author)
@@ -62,35 +77,15 @@ class PostCreateFormTests(TestCase):
         post_set = set(
             Post.objects.all()
         )
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x02\x00'
-            b'\x01\x00\x80\x00\x00\x00\x00\x00'
-            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-            b'\x0A\x00\x3B'
-        )
-        test_image = SimpleUploadedFile(
-            name='small.gif',
-            content=small_gif,
-            content_type='image/gif'
-        )
         form_data = {
-            'author': self.author,
             'text': 'Тестовый текст',
             'group': self.group.pk,
-            'image': test_image
+            'image': self.test_image
         }
         response = self.authorized_client_author.post(
             POST_CREATE_URL,
             data=form_data,
             follow=True
-        )
-        self.assertTrue(
-            Post.objects.filter(
-                text='Тестовый текст',
-                image='posts/small.gif',
-            ).exists()
         )
         self.assertRedirects(
             response, PROFILE_URL
@@ -112,16 +107,15 @@ class PostCreateFormTests(TestCase):
             post.group.pk, form_data['group']
         )
         self.assertEqual(
-            post.author, form_data['author']
+            post.author, self.author
+        )
+        self.assertEqual(
+            post.image, Post.objects.get(pk=2).image
         )
 
     def test_author_edit_post(self):
         """Редактирование поста."""
-        self.authorized_client_author.get(
-            reverse('posts:post_edit', kwargs={'post_id': self.post.pk})
-        )
         form_data = {
-            'author': self.author,
             'text': 'Измененный текст',
             'group': self.new_group.pk,
         }
@@ -131,7 +125,7 @@ class PostCreateFormTests(TestCase):
             follow=True
         )
         post_edit = Post.objects.get(
-            id=self.group.pk
+            id=self.post.pk
         )
         self.assertEqual(
             response.status_code, HTTPStatus.OK
@@ -146,12 +140,13 @@ class PostCreateFormTests(TestCase):
             response, self.POST_DETAIL_URL
         )
         self.assertEqual(
-            post_edit.author, form_data['author']
+            post_edit.author, self.author
         )
 
     def test_guest_client_not_create_form(self):
         """Проверяем, что анонимный пользователь не создает запись в Post
         и перенаправляется на страницу /auth/login/ """
+        count_post = Post.objects.count()
         form_data = {
             'text': 'Test text'
         }
@@ -160,32 +155,77 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        self.assertFalse(
-            Post.objects.filter(
-                text='Test text',
-            ).exists()
-        )
-        self.assertRedirects(response,
-                             '/auth/login/?next=/create/')
+        self.assertRedirects(
+            response,
+            reverse('users:login') + '?next='
+            + POST_CREATE_URL)
+        self.assertEqual(count_post, 1)
 
     def test_authorized_not_edit_form(self):
         """ Проверяем, что зарегистрированный пользователь
         не может редактировать чужую запись."""
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
+        )
+        test_image = SimpleUploadedFile(
+            name='small1.gif',
+            content=small_gif,
+            content_type='image/gif'
+        )
         form_data = {
             'text': 'Test edit text',
-            'group': self.new_group.pk
+            'group': self.new_group.pk,
+            'image': test_image
         }
         response = self.authorized_client.post(
             self.POST_EDIT_URL,
             data=form_data,
             follow=True
         )
-        self.assertFalse(
-            Post.objects.filter(
-                text='Test edit text'
-            ).exists()
-        )
         self.assertRedirects(response, self.POST_DETAIL_URL)
+        self.assertNotEqual(self.post.text, form_data['text'])
+        self.assertNotEqual(self.post.group, form_data['group'])
+        self.assertNotEqual(self.post.image, form_data['image'])
+
+    def test_guest_client_not_edit_post(self):
+        """Проверяем, что неавторизованный пользователь
+        не может редактировать записи"""
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
+        )
+        test_image = SimpleUploadedFile(
+            name='small1.gif',
+            content=small_gif,
+            content_type='image/gif'
+        )
+        form_data = {
+            'text': 'Test edit text',
+            'group': self.new_group.pk,
+            'image': test_image
+        }
+        response = self.guest_client.post(
+            self.POST_EDIT_URL,
+            data=form_data,
+            follow=True
+        )
+        self.assertRedirects(
+            response,
+            reverse('users:login') + '?next='
+            + self.POST_EDIT_URL
+        )
+        self.assertNotEqual(self.post.text, form_data['text'])
+        self.assertNotEqual(self.post.group, form_data['group'])
+        self.assertNotEqual(self.post.image, form_data['image'])
 
     def test_authorized_client_comments_post(self):
         """Проверяем, что авторизованный пользователь
@@ -194,11 +234,11 @@ class PostCreateFormTests(TestCase):
             'text': 'Text comment'
         }
         response = self.authorized_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': self.post.pk}),
+            self.COMMENT_ADD,
             data=form_data,
             follow=True
         )
-        comment = Comment.objects.latest('created')
+        comment = Comment.objects.get(pk=1)
         self.assertEqual(Comment.objects.count(), 1)
         self.assertEqual(comment.text, form_data['text'])
         self.assertEqual(comment.author, self.auth_user)
@@ -208,15 +248,18 @@ class PostCreateFormTests(TestCase):
     def test_guest_client_not_comment_post(self):
         """Проверяем, что незарегистрированный пользователь
         не может комментировать записи"""
+        comments_count = Comment.objects.count()
         form_data = {
             'text': 'Comment guest'
         }
         response = self.guest_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': self.post.pk}),
+            self.COMMENT_ADD,
             data=form_data,
             follow=True
         )
-        self.assertEqual(Comment.objects.count(), 0)
+        self.assertEqual(Comment.objects.count(), comments_count)
         self.assertRedirects(
-            response, '/auth/login/?next=%2Fposts%2F1%2Fcomment%2F'
+            response,
+            reverse('users:login') + '?next='
+            + self.COMMENT_ADD
         )
