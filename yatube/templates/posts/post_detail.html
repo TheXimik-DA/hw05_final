@@ -3,22 +3,24 @@
   Пост| {{ post.text|truncatechars:30 }}
 {% endblock title %}
 {% block content %}
-{% block header %}Детали поста{% endblock header%}
   <div class="container py-5">
+    <h2>Детали поста</h2>
     <div class="row">
       <aside class="col-12 col-md-2">
         <ul class="list-group list-group-flush">
           <li class="list-group-item">
-              Дата публикации:
-              {{ post.pub_date|date:"d E Y" }}
+            Дата публикации:
+            {{ post.pub_date|date:"d E Y" }}
           </li>
-          {% include "posts/includes/group_slug.html" %}
+          <li class="list-group-item">
+            {% include "posts/includes/group_slug.html" %}
+          </li>
           <li class="list-group-item">
             Автор:
             {{ post.author.username }}
           </li>
           <li class="list-group-item d-flex justify-content-between align-items-center">
-            Всего постов автора:{{ post.author.post.count }}
+            Всего постов автора: {{ post.author.posts.count }}
           </li>
           <li class="list-group-item">
             <a href="{% url 'posts:profile' post.author.username %}">Все посты пользователя</a>

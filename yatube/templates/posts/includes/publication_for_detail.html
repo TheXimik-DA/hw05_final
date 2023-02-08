@@ -1,19 +1,19 @@
 <aside class="col-12 col-md-2">
-    <ul class="list-group list-group-flush">
-      <li class="list-group-item">
-          Дата публикации:
-          {{ posts.pub_date|date:"d E Y" }}
-      </li>
-      {% include "posts/includes/group_slug.html" %}
-      <li class="list-group-item">
-        Автор:
-        {{ posts.author.username }}
-      </li>
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        Всего постов автора:{{ posts.author.posts.count }}
-      </li>
-      <li class="list-group-item">
-        <a href="{% url 'posts:profile' posts.author.username %}">Все посты пользователя</a>
-      </li>
-    </ul>
-  </aside>
+  <ul class="list-group list-group-flush">
+    <li class="list-group-item">
+      Дата публикации:
+      {{ posts.pub_date|date:"d E Y" }}
+    </li>
+    {% include "posts/includes/group_slug.html" %}
+    <li class="list-group-item">
+      Автор:
+      {{ posts.author.username }}
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      Всего постов автора:{{ posts.author.posts.count }}
+    </li>
+    <li class="list-group-item">
+      <a href="{% url 'posts:profile' posts.author.username %}">Все посты пользователя</a>
+    </li>
+  </ul>
+</aside>

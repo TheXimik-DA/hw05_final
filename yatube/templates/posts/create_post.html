@@ -21,13 +21,13 @@
         </div>
         <div class="card-body">
           <form method="post"
-          {% if action_url %}
-            action="{% url action_url %}"
-          {% endif %}
-          enctype="multipart/form-data"
+            {% if action_url %}
+              action="{% url action_url %}"
+            {% endif %}
+            enctype="multipart/form-data"
           >
             {% csrf_token %}
-                {% include "includes/fields.html" %}
+            {% include "includes/fields.html" %}
             <div class="d-flex justify-content-end">
               <button type="submit" class="btn btn-primary">
                 {% if is_edit %}
