@@ -74,7 +74,7 @@ class TaskPagesTests(TestCase):
                 if 'page_obj' in response.context:
                     post = response.context['page_obj'][0]
                 else:
-                    post = response.context['posts']
+                    post = response.context['post']
                 self.assertEqual(post.author, self.post.author)
                 self.assertEqual(post.group, self.post.group)
                 self.assertEqual(post.text, self.post.text)

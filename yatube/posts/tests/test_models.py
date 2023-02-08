@@ -94,7 +94,7 @@ class FollowModelTest(TestCase):
 
     def test_follow_models_have_correct_object_name(self):
         follow = FollowModelTest.follow
-        expected_follow_back = f'{follow.user} подписан на {follow.author}'
+        expected_follow_back = f'{follow.user.username} подписан на {follow.author.username}'
         self.assertEqual(expected_follow_back, str(follow))
 
     def test_follow_verbose_name(self):

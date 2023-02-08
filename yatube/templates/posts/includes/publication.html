@@ -1,10 +1,10 @@
 <p>
   <ul>
     <li>
-      <b>Автор:</b> {{ post.author }}
+      Автор: {{ post.author.username }}
     </li>
     <li>
-      <b>Дата публикации:</b> {{ post.pub_date|date:"d E Y" }}
+      Дата публикации: {{ post.pub_date|date:"d E Y" }}
     </li>
   </ul>
   <p>{{ post.text|linebreaksbr }}</p>

@@ -4,7 +4,7 @@
     <h5 class="card-header">Добавить комментарий:</h5>
     <div class="card my-3">
       <form method="post"
-        action="{% url 'posts:add_comment' posts.id %}">
+        action="{% url 'posts:add_comment' post.id %}">
         {% csrf_token %}
         <div class="form-group mb-2">
           {{ form.text|addclass:"form-control" }}
@@ -14,7 +14,7 @@
     </div>
   </div>
 {% endif %}
-{% for comment in posts.comments.all %}
+{% for comment in post.comments.all %}
   <div class="media mb-4">
     <div class="media-body">
       <h5 class="mt-0">
@@ -22,8 +22,8 @@
           {{ comment.author.username }}
         </a>
       </h5>
-      {{ comment.created }}
       <p>
+        {{ comment.created }}
         {{ comment.text|linebreaksbr  }}
       </p>
     </div>
