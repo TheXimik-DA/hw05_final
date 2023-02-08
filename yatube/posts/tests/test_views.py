@@ -1,16 +1,23 @@
+import shutil
+import tempfile
+
 from django.core.cache import cache
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.conf import settings
 
 from posts.models import Follow, Group, Post, User
 
+POSTS_IN_SECOND_PAGES = 1
 GROUP_SLUG = 'test_slug'
 GROUP2_SLUG = 'test2'
 USERNAME = 'tigr'
 USERNAME_AUTHOR = 'Authortest'
 INDEX_URL = reverse('posts:index')
 POST_CREATE_URL = reverse('posts:post_create')
+PROFILE_URL = reverse('posts:profile',
+                      kwargs={'username': USERNAME_AUTHOR})
 GROUP_LIST_URL = reverse('posts:group_list',
                          kwargs={'slug': GROUP_SLUG})
 GROUP2_LIST_URL = reverse('posts:group_list',
@@ -21,7 +28,19 @@ PROFILE_FOLLOW_URL = reverse('posts:profile_follow',
 PROFILE_UNFOLLOW_URL = reverse('posts:profile_unfollow',
                                kwargs={'username': USERNAME_AUTHOR})
 
+SMALL_GIF = (
+    b'\x47\x49\x46\x38\x39\x61\x02\x00'
+    b'\x01\x00\x80\x00\x00\x00\x00\x00'
+    b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+    b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+    b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+    b'\x0A\x00\x3B'
+)
 
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class TaskPagesTests(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -38,11 +57,16 @@ class TaskPagesTests(TestCase):
             slug=GROUP2_SLUG,
             description='Тестовое описание 2',
         )
+        cls.test_image = SimpleUploadedFile(
+            name='small.gif',
+            content=SMALL_GIF,
+            content_type='image/gif'
+        )
         cls.post = Post.objects.create(
             author=cls.author,
             group=cls.group,
             text='Тестовый текстss',
-            pub_date='25.02.1995',
+            image=cls.test_image
         )
         Follow.objects.create(
             user=cls.user,
@@ -56,8 +80,11 @@ class TaskPagesTests(TestCase):
                                       kwargs={'post_id': cls.post.pk})
         cls.POST_EDIT_URL = reverse('posts:post_edit',
                                     kwargs={'post_id': cls.post.pk})
-        cls.PROFILE_URL = reverse('posts:profile',
-                                  kwargs={'username': cls.author.username})
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def test_page_show_correct_context(self):
         """Шаблоны сформированы с правильным контекстом."""
@@ -65,7 +92,7 @@ class TaskPagesTests(TestCase):
             GROUP_LIST_URL,
             INDEX_URL,
             self.POST_DETAIL_URL,
-            self.PROFILE_URL,
+            PROFILE_URL,
             FOLLOW_URL
         )
         for url in correct_context:
@@ -78,6 +105,7 @@ class TaskPagesTests(TestCase):
                 self.assertEqual(post.author, self.post.author)
                 self.assertEqual(post.group, self.post.group)
                 self.assertEqual(post.text, self.post.text)
+                self.assertEqual(post.image, self.post.image)
 
     def test_cache_index_page(self):
         """Проверка сохранения кэша для index."""
@@ -96,9 +124,9 @@ class TaskPagesTests(TestCase):
         ).content
         self.assertNotEqual(response, after_delete_cache)
 
-    def test_post_is_not_in_incorrect_group(self):
-        """Проверка, что запись не попала на страницу сообщества,
-        для которой не была предназначена."""
+    def test_post_is_not_in_incorrect_page(self):
+        """Проверка, что запись не попала на страницу для
+        которой не была предназначена."""
         urls = (
             GROUP2_LIST_URL,
             FOLLOW_URL
@@ -106,7 +134,9 @@ class TaskPagesTests(TestCase):
         for url in urls:
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
-                self.assertNotContains(response, Post)
+                self.assertNotIn(
+                    Post.objects.exclude(group=self.group2),
+                    response.context['page_obj'])
 
     def test_paginator(self):
         cache.clear()
@@ -116,29 +146,26 @@ class TaskPagesTests(TestCase):
                 text=f'{i + 1} test',
                 group=self.group
             )
-            for i in range(1, settings.MAX_RECORDS)
+            for i in range(1, 11)
         )
-        for url in [
-            INDEX_URL,
-            GROUP_LIST_URL,
-            self.PROFILE_URL,
-        ]:
-            with self.subTest(url=url):
+        urls = (
+            (INDEX_URL, settings.MAX_RECORDS),
+            (INDEX_URL + '?page=2', POSTS_IN_SECOND_PAGES),
+            (GROUP_LIST_URL, settings.MAX_RECORDS),
+            (GROUP_LIST_URL + '?page=2', POSTS_IN_SECOND_PAGES),
+            (PROFILE_URL, settings.MAX_RECORDS),
+            (PROFILE_URL + '?page=2', POSTS_IN_SECOND_PAGES),
+            (FOLLOW_URL, settings.MAX_RECORDS),
+            (FOLLOW_URL + '?page=2', POSTS_IN_SECOND_PAGES)
+        )
+        for url, num in urls:
+            with self.subTest(url=url, num=num):
                 response = self.authorized_client.get(url)
                 self.assertEqual(
-                    len(response.context['page_obj']), settings.MAX_RECORDS
-                )
-                response_second = self.authorized_client.get(
-                    f'{url}?page=2'
-                )
-                self.assertEqual(
-                    len(response_second.context['page_obj']),
-                    settings.MAX_RECORDS
-                )
+                    len(response.context['page_obj']), num)
 
     def test_follow_authorized_author(self):
         """Проверка, что авторизованный пользователь может подписаться."""
-        cache.clear()
         self.authorized_client.get(PROFILE_FOLLOW_URL)
         self.assertTrue(
             Follow.objects.filter(user=self.user, author=self.author).exists()
@@ -147,7 +174,6 @@ class TaskPagesTests(TestCase):
     def test_unfollow_authorized_author(self):
         """Проверка, что авторизованный пользователь может отписаться."""
         self.authorized_client.get(PROFILE_UNFOLLOW_URL)
-        self.assertEqual(Follow.objects.count(), 0)
         self.assertFalse(
             Follow.objects.filter(
                 user=self.user, author=self.author

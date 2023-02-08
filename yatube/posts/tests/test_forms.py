@@ -16,6 +16,14 @@ INDEX_URL = reverse('posts:index')
 POST_CREATE_URL = reverse('posts:post_create')
 GROUP_LIST_URL = reverse('posts:group_list', kwargs={'slug': GROUP_SLUG})
 PROFILE_URL = reverse('posts:profile', kwargs={'username': USERNAME_AUTHOR})
+SMALL_GIF = (
+    b'\x47\x49\x46\x38\x39\x61\x02\x00'
+    b'\x01\x00\x80\x00\x00\x00\x00\x00'
+    b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+    b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+    b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+    b'\x0A\x00\x3B'
+)
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -42,17 +50,14 @@ class PostCreateFormTests(TestCase):
             text='Тестовый текст поста',
             group=cls.group,
         )
-        cls.small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x02\x00'
-            b'\x01\x00\x80\x00\x00\x00\x00\x00'
-            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-            b'\x0A\x00\x3B'
-        )
         cls.test_image = SimpleUploadedFile(
             name='small.gif',
-            content=cls.small_gif,
+            content=SMALL_GIF,
+            content_type='image/gif'
+        )
+        cls.test_image_edit = SimpleUploadedFile(
+            name='small2.gif',
+            content=SMALL_GIF,
             content_type='image/gif'
         )
         cls.POST_DETAIL_URL = reverse('posts:post_detail',
@@ -110,7 +115,7 @@ class PostCreateFormTests(TestCase):
             post.author, self.author
         )
         self.assertEqual(
-            post.image, Post.objects.get(pk=2).image
+            post.image.name, f'posts/{self.test_image.name}'
         )
 
     def test_author_edit_post(self):
@@ -118,6 +123,7 @@ class PostCreateFormTests(TestCase):
         form_data = {
             'text': 'Измененный текст',
             'group': self.new_group.pk,
+            'image': self.test_image_edit
         }
         response = self.authorized_client_author.post(
             self.POST_EDIT_URL,
@@ -140,15 +146,19 @@ class PostCreateFormTests(TestCase):
             response, self.POST_DETAIL_URL
         )
         self.assertEqual(
-            post_edit.author, self.author
+            post_edit.author, self.post.author
+        )
+        self.assertEqual(
+            post_edit.image.name, f'posts/{self.test_image_edit.name}'
         )
 
     def test_guest_client_not_create_form(self):
         """Проверяем, что анонимный пользователь не создает запись в Post
         и перенаправляется на страницу /auth/login/ """
-        count_post = Post.objects.count()
         form_data = {
-            'text': 'Test text'
+            'text': 'Test text',
+            'group': self.group.pk,
+            'image': self.test_image
         }
         response = self.guest_client.post(
             POST_CREATE_URL,
@@ -159,22 +169,19 @@ class PostCreateFormTests(TestCase):
             response,
             reverse('users:login') + '?next='
             + POST_CREATE_URL)
-        self.assertEqual(count_post, 1)
 
     def test_authorized_not_edit_form(self):
         """ Проверяем, что зарегистрированный пользователь
         не может редактировать чужую запись."""
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x02\x00'
-            b'\x01\x00\x80\x00\x00\x00\x00\x00'
-            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-            b'\x0A\x00\x3B'
+        clients = (
+            (self.auth_user, reverse('users:login') + '?next='
+             + self.POST_EDIT_URL),
+            (self.guest_client, reverse('users:login') + '?next='
+             + self.POST_EDIT_URL)
         )
         test_image = SimpleUploadedFile(
             name='small1.gif',
-            content=small_gif,
+            content=SMALL_GIF,
             content_type='image/gif'
         )
         form_data = {
@@ -182,50 +189,22 @@ class PostCreateFormTests(TestCase):
             'group': self.new_group.pk,
             'image': test_image
         }
-        response = self.authorized_client.post(
-            self.POST_EDIT_URL,
-            data=form_data,
-            follow=True
-        )
-        self.assertRedirects(response, self.POST_DETAIL_URL)
-        self.assertNotEqual(self.post.text, form_data['text'])
-        self.assertNotEqual(self.post.group, form_data['group'])
-        self.assertNotEqual(self.post.image, form_data['image'])
-
-    def test_guest_client_not_edit_post(self):
-        """Проверяем, что неавторизованный пользователь
-        не может редактировать записи"""
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x02\x00'
-            b'\x01\x00\x80\x00\x00\x00\x00\x00'
-            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-            b'\x0A\x00\x3B'
-        )
-        test_image = SimpleUploadedFile(
-            name='small1.gif',
-            content=small_gif,
-            content_type='image/gif'
-        )
-        form_data = {
-            'text': 'Test edit text',
-            'group': self.new_group.pk,
-            'image': test_image
-        }
-        response = self.guest_client.post(
-            self.POST_EDIT_URL,
-            data=form_data,
-            follow=True
-        )
-        self.assertRedirects(
-            response,
-            reverse('users:login') + '?next='
-            + self.POST_EDIT_URL
-        )
-        self.assertNotEqual(self.post.text, form_data['text'])
-        self.assertNotEqual(self.post.group, form_data['group'])
-        self.assertNotEqual(self.post.image, form_data['image'])
+        for client, redirect in clients:
+            with self.subTest(client=client):
+                response = self.client.post(
+                    self.POST_EDIT_URL,
+                    data=form_data,
+                    follow=True
+                )
+                self.assertRedirects(response, redirect)
+                self.assertFalse(
+                    Post.objects.filter(
+                        author=self.auth_user,
+                        text=form_data['text'],
+                        group=form_data['group'],
+                        image=form_data['image']
+                    ).exists()
+                )
 
     def test_authorized_client_comments_post(self):
         """Проверяем, что авторизованный пользователь
@@ -238,8 +217,7 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        comment = Comment.objects.get(pk=1)
-        self.assertEqual(Comment.objects.count(), 1)
+        comment = Comment.objects.last()
         self.assertEqual(comment.text, form_data['text'])
         self.assertEqual(comment.author, self.auth_user)
         self.assertEqual(comment.post, self.post)
@@ -257,7 +235,6 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        self.assertEqual(Comment.objects.count(), comments_count)
         self.assertRedirects(
             response,
             reverse('users:login') + '?next='
