@@ -1,11 +1,11 @@
-from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from posts.forms import CommentForm, PostForm
-from posts.models import Group, Post, User, Follow
+from posts.models import Follow, Group, Post, User
 
 
 def get_page(posts, request):
@@ -126,8 +126,9 @@ def profile_follow(request, username):
     return redirect(reverse('posts:profile', args=[username]))
 
 
-@login_required
+@login_required 
 def profile_unfollow(request, username):
-    author = get_object_or_404(User, username=username)
-    Follow.objects.filter(user=request.user, author=author).delete()
-    return redirect('posts:profile', username)
+    follow_object = get_object_or_404(Follow, author__username=username,
+                                      user=request.user)
+    follow_object.delete()
+    return redirect('profile', username=username)

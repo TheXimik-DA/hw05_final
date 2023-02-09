@@ -1,4 +1,4 @@
 {% if post.group %}
-  <a>Группа: {{ group.title }}</a>
+  Группа: {{ group.title }}
   <a href="{% url 'posts:group_list' post.group.slug %}">все записи группы</a>
 {% endif %}

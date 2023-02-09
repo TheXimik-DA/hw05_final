@@ -7,14 +7,12 @@
     <h2>Последние обновления на сайте. </h2>
     {% cache 20 index_page %}
       {% for post in page_obj %}
-        <article>
           {% include "posts/includes/post.html" %}
       {% empty %}
         <h3>Отсутствуют записи. Поделитесь чем-нибудь!</h3>
-        </article>
-        {% include "posts/includes/group_slug.html" %}
-        {% if not forloop.last %}<hr>{% endif %}
       {% endfor %}
+      {% include "posts/includes/group_slug.html" %}
+      {% if not forloop.last %}<hr>{% endif %}
       {% include "posts/includes/paginator.html" %}
     {% endcache %}
   </div>
