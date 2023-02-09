@@ -135,7 +135,7 @@ class TaskPagesTests(TestCase):
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
                 self.assertNotIn(
-                    Post.objects.exclude(group=self.group2),
+                    self.group2,
                     response.context['page_obj'])
 
     def test_paginator(self):
@@ -146,7 +146,7 @@ class TaskPagesTests(TestCase):
                 text=f'{i + 1} test',
                 group=self.group
             )
-            for i in range(1, 11)
+            for i in range(settings.MAX_RECORDS)
         )
         urls = (
             (INDEX_URL, settings.MAX_RECORDS),

@@ -5,10 +5,11 @@ from django.urls import reverse
 
 from posts.models import Group, Post, User
 
-NOT_FOUNT_URL = '/existing_page/'
+NOT_FOUND_URL = '/existing_page/'
 GROUP_SLUG = 'test_slug'
 USERNAME_AUTHOR = 'Author'
 USERNAME_USER = 'Auth_user'
+LOGIN = reverse('users:login')
 FOLLOW_URL = reverse('posts:follow_index')
 INDEX_URL = reverse('posts:index')
 POST_CREATE_URL = reverse('posts:post_create')
@@ -55,6 +56,12 @@ class StaticURLTests(TestCase):
                                     kwargs={'post_id': cls.post.pk})
         cls.POST_COMMENT_URL = reverse('posts:add_comment',
                                        kwargs={'post_id': cls.post.pk})
+        cls.GUEST_POST_EDIT = f'{LOGIN}?next={cls.POST_EDIT_URL}'
+        cls.GUEST_CREATE_POST = f'{LOGIN}?next={POST_CREATE_URL}'
+        cls.GUEST_POST_COMMENT = f'{LOGIN}?next={cls.POST_COMMENT_URL}'
+        cls.GUEST_FOLLOW = f'{LOGIN}?next={FOLLOW_URL}'
+        cls.GUEST_PROFILE_FOLLOW = f'{LOGIN}?next={PROFILE_FOLLOW_URL}'
+        cls.GUEST_PROFILE_UNFOLLOW = f'{LOGIN}?next={PROFILE_UNFOLLOW_URL}'
         cls.guest = Client()
         cls.another = Client()
         cls.author = Client()
@@ -75,7 +82,7 @@ class StaticURLTests(TestCase):
              self.guest),
             (POST_CREATE_URL, HTTP_FOUND,
              self.guest),
-            (NOT_FOUNT_URL, HTTP_NOT_FOUND,
+            (NOT_FOUND_URL, HTTP_NOT_FOUND,
              self.guest),
             (FOLLOW_URL, HTTP_FOUND,
              self.guest),
@@ -119,7 +126,7 @@ class StaticURLTests(TestCase):
                 self.author),
             (POST_CREATE_URL, 'posts/create_post.html',
                 self.author),
-            (NOT_FOUNT_URL, 'core/404.html',
+            (NOT_FOUND_URL, 'core/404.html',
                 self.author),
             (FOLLOW_URL, 'posts/follow.html',
                 self.author),
@@ -130,19 +137,13 @@ class StaticURLTests(TestCase):
 
     def test_redirects(self):
         urls_redirects = (
-            (self.POST_EDIT_URL, reverse('users:login') + '?next='
-             + self.POST_EDIT_URL,
+            (self.POST_EDIT_URL, self.GUEST_POST_EDIT,
              self.guest),
-            (POST_CREATE_URL, reverse('users:login') + '?next='
-             + POST_CREATE_URL, self.guest),
-            (self.POST_COMMENT_URL, reverse('users:login') + '?next='
-             + self.POST_COMMENT_URL, self.guest),
-            (FOLLOW_URL, reverse('users:login') + '?next='
-             + FOLLOW_URL, self.guest),
-            (PROFILE_FOLLOW_URL, reverse('users:login') + '?next='
-             + PROFILE_FOLLOW_URL, self.guest),
-            (PROFILE_UNFOLLOW_URL, reverse('users:login') + '?next='
-             + PROFILE_UNFOLLOW_URL, self.guest),
+            (POST_CREATE_URL, self.GUEST_CREATE_POST, self.guest),
+            (self.POST_COMMENT_URL, self.GUEST_POST_COMMENT, self.guest),
+            (FOLLOW_URL, self.GUEST_FOLLOW, self.guest),
+            (PROFILE_FOLLOW_URL, self.GUEST_PROFILE_FOLLOW, self.guest),
+            (PROFILE_UNFOLLOW_URL, self.GUEST_PROFILE_UNFOLLOW, self.guest),
             (self.POST_COMMENT_URL, self.POST_DETAIL_URL, self.author),
             (PROFILE_FOLLOW_URL, PROFILE_URL_ANOTHER, self.author),
             (PROFILE_UNFOLLOW_URL, PROFILE_URL_ANOTHER, self.author),

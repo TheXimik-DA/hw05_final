@@ -12,6 +12,7 @@ from posts.models import Group, Post, User, Comment
 GROUP_SLUG = 'slug'
 USERNAME_AUTHOR = 'Author'
 USERNAME_USER = 'Auth_user'
+LOGIN_URL = reverse('users:login')
 INDEX_URL = reverse('posts:index')
 POST_CREATE_URL = reverse('posts:post_create')
 GROUP_LIST_URL = reverse('posts:group_list', kwargs={'slug': GROUP_SLUG})
@@ -152,9 +153,10 @@ class PostCreateFormTests(TestCase):
             post_edit.image.name, f'posts/{self.test_image_edit.name}'
         )
 
-    def test_guest_client_not_create_form(self):
+    def test_guest_client_not_create_post_and_redirect(self):
         """Проверяем, что анонимный пользователь не создает запись в Post
         и перенаправляется на страницу /auth/login/ """
+        post_count = Post.objects.count()
         form_data = {
             'text': 'Test text',
             'group': self.group.pk,
@@ -166,18 +168,22 @@ class PostCreateFormTests(TestCase):
             follow=True
         )
         self.assertRedirects(
-            response,
-            reverse('users:login') + '?next='
-            + POST_CREATE_URL)
+            response, f'{LOGIN_URL}?next={POST_CREATE_URL}')
+        self.assertFalse(
+            Post.objects.filter(
+                text=form_data['text'],
+                group=form_data['group'],
+                image=form_data['image']
+            ).exists()
+        )
+        self.assertEqual(Post.objects.count(), post_count)
 
-    def test_authorized_not_edit_form(self):
-        """ Проверяем, что зарегистрированный пользователь
-        не может редактировать чужую запись."""
+    def test_guest_and_authorized_client_dont_edit_alien_post(self):
+        """ Проверяем, что любой пользователь кроме автора
+        не может редактировать пост."""
         clients = (
-            (self.auth_user, reverse('users:login') + '?next='
-             + self.POST_EDIT_URL),
-            (self.guest_client, reverse('users:login') + '?next='
-             + self.POST_EDIT_URL)
+            (self.auth_user, f'{LOGIN_URL}?next={self.POST_EDIT_URL}'),
+            (self.guest_client, f'{LOGIN_URL}?next={self.POST_EDIT_URL}'),
         )
         test_image = SimpleUploadedFile(
             name='small1.gif',
@@ -196,15 +202,13 @@ class PostCreateFormTests(TestCase):
                     data=form_data,
                     follow=True
                 )
-                self.assertRedirects(response, redirect)
-                self.assertFalse(
-                    Post.objects.filter(
-                        author=self.auth_user,
-                        text=form_data['text'],
-                        group=form_data['group'],
-                        image=form_data['image']
-                    ).exists()
+                post_change = Post.objects.get(
+                    id=self.post.pk
                 )
+                self.assertRedirects(response, redirect)
+                self.assertEqual(self.post.text, post_change.text)
+                self.assertEqual(self.post.group, post_change.group)
+                self.assertEqual(self.post.image, post_change.image)
 
     def test_authorized_client_comments_post(self):
         """Проверяем, что авторизованный пользователь
@@ -217,7 +221,7 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        comment = Comment.objects.last()
+        comment = Comment.objects.order_by('-pk')[0]
         self.assertEqual(comment.text, form_data['text'])
         self.assertEqual(comment.author, self.auth_user)
         self.assertEqual(comment.post, self.post)
@@ -226,6 +230,7 @@ class PostCreateFormTests(TestCase):
     def test_guest_client_not_comment_post(self):
         """Проверяем, что незарегистрированный пользователь
         не может комментировать записи"""
+        comments_count = Comment.objects.count()
         form_data = {
             'text': 'Comment guest'
         }
@@ -235,7 +240,11 @@ class PostCreateFormTests(TestCase):
             follow=True
         )
         self.assertRedirects(
-            response,
-            reverse('users:login') + '?next='
-            + self.COMMENT_ADD
+            response, f'{LOGIN_URL}?next={self.COMMENT_ADD}'
         )
+        self.assertFalse(
+            Comment.objects.filter(
+                text=form_data['text'],
+            ).exists()
+        )
+        self.assertEqual(Comment.objects.count(), comments_count)
