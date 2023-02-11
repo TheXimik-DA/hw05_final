@@ -168,10 +168,10 @@ class TaskPagesTests(TestCase):
             INDEX_PAGE_PAGINATE: POSTS_SEC_PAGE,
             GROUP2_LIST_URL: settings.MAX_RECORDS,
             GROUP2_URL: POSTS_SEC_PAGE,
-            PROFILE_URL: settings.MAX_RECORDS,
-            PROFILE_PAGINATE: POSTS_SEC_PAGE,
             FOLLOW_URL: settings.MAX_RECORDS,
             FOLLOW_URL_SEC: POSTS_SEC_PAGE,
+            PROFILE_URL: settings.MAX_RECORDS,
+            PROFILE_PAGINATE: POSTS_SEC_PAGE,
         }
         for url, number in urls.items():
             with self.subTest(
