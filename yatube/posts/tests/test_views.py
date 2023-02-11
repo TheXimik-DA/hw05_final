@@ -180,7 +180,7 @@ class TaskPagesTests(TestCase):
                 self.assertEqual(
                     len(
                         self.authorized_client.get(url).context['page_obj']
-                    ), 
+                ), 
                         number,
                 )
 
