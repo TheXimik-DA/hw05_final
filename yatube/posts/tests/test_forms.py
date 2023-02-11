@@ -161,7 +161,6 @@ class PostCreateFormTests(TestCase):
     def test_guest_client_not_create_post_and_redirect(self):
         """Проверяем, что анонимный пользователь не создает запись в Post
         и перенаправляется на страницу /auth/login/ """
-        post_count = Post.objects.count()
         form_data = {
             'text': 'Test text',
             'group': self.group.pk,
