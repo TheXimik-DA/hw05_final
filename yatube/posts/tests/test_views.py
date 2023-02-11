@@ -79,8 +79,8 @@ class TaskPagesTests(TestCase):
             user=cls.follow_user,
             author=cls.author
         )
-        cls.authorized_client = Client()
-        cls.authorized_client.force_login(cls.user)
+        cls.authorized = Client()
+        cls.authorized.force_login(cls.user)
         cls.author_user = Client()
         cls.author_user.force_login(cls.author)
         cls.following_user = Client()
@@ -124,13 +124,13 @@ class TaskPagesTests(TestCase):
             author=self.user,
             text='Проверка кэша'
         )
-        response = self.authorized_client.get(INDEX_URL).content
+        response = self.authorized.get(INDEX_URL).content
         new_post.delete()
-        after_delete_post = self.authorized_client.get(
+        after_delete_post = self.authorized.get(
             reverse('posts:index')).content
         self.assertEqual(response, after_delete_post)
         cache.clear()
-        after_delete_cache = self.authorized_client.get(
+        after_delete_cache = self.authorized.get(
             reverse('posts:index')
         ).content
         self.assertNotEqual(response, after_delete_cache)
@@ -144,7 +144,7 @@ class TaskPagesTests(TestCase):
         )
         for url in urls:
             with self.subTest(url=url):
-                response = self.authorized_client.get(url)
+                response = self.authorized.get(url)
                 self.assertEqual(len(response.context['page_obj']), 0)
 
     def test_paginator(self):
@@ -179,7 +179,7 @@ class TaskPagesTests(TestCase):
             ):
                 self.assertEqual(
                     len(
-                        self.authorized_client.get(url).context['page_obj']), num,
+                        self.authorized.get(url).context['page_obj']), num,
                 )
 
     def test_follow_authorized_author(self):
@@ -187,7 +187,7 @@ class TaskPagesTests(TestCase):
         self.assertEqual(len(Follow.objects.filter(
             user=self.user,
             author=self.author)), 0)
-        self.authorized_client.get(
+        self.authorized.get(
             PROFILE_FOLLOW_URL
         )
         self.assertTrue(
@@ -196,7 +196,7 @@ class TaskPagesTests(TestCase):
 
     def test_unfollow_authorized_author(self):
         """Проверка, что авторизованный пользователь может отписаться."""
-        self.authorized_client.get(
+        self.authorized.get(
             PROFILE_UNFOLLOW_URL
         )
         self.assertEqual(len(Follow.objects.filter(
@@ -210,7 +210,7 @@ class TaskPagesTests(TestCase):
 
     def test_group_list_has_correct_context(self):
         """Группа в контексте Групп-ленты без искажения атрибутов"""
-        group = self.authorized_client.get(
+        group = self.authorized.get(
             GROUP_LIST_URL
         ).context['group']
         self.assertEqual(
