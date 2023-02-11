@@ -14,6 +14,7 @@ GROUP_SLUG = 'test_slug'
 GROUP2_SLUG = 'test2'
 USERNAME = 'tigr'
 USERNAME_AUTHOR = 'Authortest'
+USERNAME_FOLLOWING = 'Follow'
 INDEX_URL = reverse('posts:index')
 POST_CREATE_URL = reverse('posts:post_create')
 PROFILE_URL = reverse('posts:profile',
@@ -47,6 +48,7 @@ class TaskPagesTests(TestCase):
         super().setUpClass()
         cls.user = User.objects.create_user(username=USERNAME)
         cls.author = User.objects.create_user(username=USERNAME_AUTHOR)
+        cls.follow_user = User.objects.create_user(username=USERNAME_FOLLOWING)
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug=GROUP_SLUG,
@@ -69,13 +71,15 @@ class TaskPagesTests(TestCase):
             image=cls.test_image
         )
         Follow.objects.create(
-            user=cls.user,
+            user=cls.follow_user,
             author=cls.author
         )
         cls.authorized_client = Client()
         cls.authorized_client.force_login(cls.user)
         cls.author_user = Client()
         cls.author_user.force_login(cls.author)
+        cls.following_user = Client()
+        cls.following_user.force_login(cls.follow_user)
         cls.POST_DETAIL_URL = reverse('posts:post_detail',
                                       kwargs={'post_id': cls.post.pk})
         cls.POST_EDIT_URL = reverse('posts:post_edit',
@@ -97,7 +101,7 @@ class TaskPagesTests(TestCase):
         )
         for url in correct_context:
             with self.subTest(url=url):
-                response = self.authorized_client.get(url)
+                response = self.following_user.get(url)
                 if 'page_obj' in response.context and len(
                         response.context['page_obj']) == 1:
                     post = response.context['page_obj'][0]
@@ -136,9 +140,7 @@ class TaskPagesTests(TestCase):
         for url in urls:
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
-                self.assertNotIn(
-                    self.group2,
-                    response.context['page_obj'])
+                self.assertEqual(len(response.context['page_obj']), 0)
 
     def test_paginator(self):
         cache.clear()
@@ -162,12 +164,15 @@ class TaskPagesTests(TestCase):
         )
         for url, num in urls:
             with self.subTest(url=url, num=num):
-                response = self.authorized_client.get(url)
+                response = self.following_user.get(url)
                 self.assertEqual(
                     len(response.context['page_obj']), num)
 
     def test_follow_authorized_author(self):
         """Проверка, что авторизованный пользователь может подписаться."""
+        self.assertEqual(len(Follow.objects.filter(
+            user=self.user,
+            author=self.author)), 0)
         self.authorized_client.get(PROFILE_FOLLOW_URL)
         self.assertTrue(
             Follow.objects.filter(user=self.user, author=self.author).exists()
@@ -176,9 +181,26 @@ class TaskPagesTests(TestCase):
     def test_unfollow_authorized_author(self):
         """Проверка, что авторизованный пользователь может отписаться."""
         self.authorized_client.get(PROFILE_UNFOLLOW_URL)
-        self.assertEqual(Follow.objects.count(), 0)
+        self.assertEqual(len(Follow.objects.filter(
+            user=self.follow_user,
+            author=self.author)), 1)
         self.assertFalse(
             Follow.objects.filter(
                 user=self.user, author=self.author
             ).exists()
+        )
+
+    def test_group_list_has_correct_context(self):
+        """Группа в контексте Групп-ленты без искажения атрибутов"""
+        group = self.authorized_client.get(GROUP_LIST_URL).context['group']
+        self.assertEqual(group.title, self.group.title)
+        self.assertEqual(group.description, self.group.description)
+        self.assertEqual(group.slug, self.group.slug)
+        self.assertEqual(group.pk, self.group.pk)
+
+    def test_profile_has_correct_context(self):
+        """Автор в контексте Профиля"""
+        response = self.author_user.get(PROFILE_URL)
+        self.assertEqual(
+            response.context['author'], self.author
         )

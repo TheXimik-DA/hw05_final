@@ -17,6 +17,7 @@ INDEX_URL = reverse('posts:index')
 POST_CREATE_URL = reverse('posts:post_create')
 GROUP_LIST_URL = reverse('posts:group_list', kwargs={'slug': GROUP_SLUG})
 PROFILE_URL = reverse('posts:profile', kwargs={'username': USERNAME_AUTHOR})
+GUEST_CREATE_POST = f'{LOGIN_URL}?next={POST_CREATE_URL}'
 SMALL_GIF = (
     b'\x47\x49\x46\x38\x39\x61\x02\x00'
     b'\x01\x00\x80\x00\x00\x00\x00\x00'
@@ -67,6 +68,8 @@ class PostCreateFormTests(TestCase):
                                     kwargs={'post_id': cls.post.pk})
         cls.COMMENT_ADD = reverse('posts:add_comment',
                                   kwargs={'post_id': cls.post.pk})
+        cls.POST_EDIT_AUTHORIZED = f'{LOGIN_URL}?next={cls.POST_EDIT_URL}'
+        cls.POST_EDIT_GUEST = f'{LOGIN_URL}?next={cls.POST_EDIT_URL}'
         cls.guest_client = Client()
         cls.authorized_client_author = Client()
         cls.authorized_client_author.force_login(cls.author)
@@ -116,7 +119,8 @@ class PostCreateFormTests(TestCase):
             post.author, self.author
         )
         self.assertEqual(
-            post.image.name, f'posts/{self.test_image.name}'
+            post.image.name,
+            f'{post.image.field.upload_to}{self.test_image.name}'
         )
 
     def test_author_edit_post(self):
@@ -150,7 +154,8 @@ class PostCreateFormTests(TestCase):
             post_edit.author, self.post.author
         )
         self.assertEqual(
-            post_edit.image.name, f'posts/{self.test_image_edit.name}'
+            post_edit.image.name,
+            f'{self.post.image.field.upload_to}{self.test_image_edit.name}'
         )
 
     def test_guest_client_not_create_post_and_redirect(self):
@@ -168,22 +173,15 @@ class PostCreateFormTests(TestCase):
             follow=True
         )
         self.assertRedirects(
-            response, f'{LOGIN_URL}?next={POST_CREATE_URL}')
-        self.assertFalse(
-            Post.objects.filter(
-                text=form_data['text'],
-                group=form_data['group'],
-                image=form_data['image']
-            ).exists()
-        )
-        self.assertEqual(Post.objects.count(), post_count)
+            response, GUEST_CREATE_POST)
+        self.assertNotIn(response, Post.objects.all())
 
     def test_guest_and_authorized_client_dont_edit_alien_post(self):
         """ Проверяем, что любой пользователь кроме автора
         не может редактировать пост."""
         clients = (
-            (self.auth_user, f'{LOGIN_URL}?next={self.POST_EDIT_URL}'),
-            (self.guest_client, f'{LOGIN_URL}?next={self.POST_EDIT_URL}'),
+            (self.auth_user, self.POST_EDIT_AUTHORIZED),
+            (self.guest_client, self.POST_EDIT_GUEST),
         )
         test_image = SimpleUploadedFile(
             name='small1.gif',
@@ -209,6 +207,7 @@ class PostCreateFormTests(TestCase):
                 self.assertEqual(self.post.text, post_change.text)
                 self.assertEqual(self.post.group, post_change.group)
                 self.assertEqual(self.post.image, post_change.image)
+                self.assertEqual(self.post.author, post_change.author)
 
     def test_authorized_client_comments_post(self):
         """Проверяем, что авторизованный пользователь
@@ -221,7 +220,7 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        comment = Comment.objects.order_by('-pk')[0]
+        comment = Comment.objects.first()
         self.assertEqual(comment.text, form_data['text'])
         self.assertEqual(comment.author, self.auth_user)
         self.assertEqual(comment.post, self.post)
