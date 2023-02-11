@@ -181,7 +181,7 @@ class TaskPagesTests(TestCase):
                     len(
                         self.authorized_client.get(url).context['page_obj']
                     ), 
-                    number,
+                        number,
                 )
 
     def test_follow_authorized_author(self):
@@ -189,14 +189,18 @@ class TaskPagesTests(TestCase):
         self.assertEqual(len(Follow.objects.filter(
             user=self.user,
             author=self.author)), 0)
-        self.authorized_client.get(PROFILE_FOLLOW_URL)
+        self.authorized_client.get(
+            PROFILE_FOLLOW_URL
+        )
         self.assertTrue(
             Follow.objects.filter(user=self.user, author=self.author).exists()
         )
 
     def test_unfollow_authorized_author(self):
         """Проверка, что авторизованный пользователь может отписаться."""
-        self.authorized_client.get(PROFILE_UNFOLLOW_URL)
+        self.authorized_client.get(
+            PROFILE_UNFOLLOW_URL
+        )
         self.assertEqual(len(Follow.objects.filter(
             user=self.follow_user,
             author=self.author)), 1)
@@ -208,15 +212,32 @@ class TaskPagesTests(TestCase):
 
     def test_group_list_has_correct_context(self):
         """Группа в контексте Групп-ленты без искажения атрибутов"""
-        group = self.authorized_client.get(GROUP_LIST_URL).context['group']
-        self.assertEqual(group.title, self.group.title)
-        self.assertEqual(group.description, self.group.description)
-        self.assertEqual(group.slug, self.group.slug)
-        self.assertEqual(group.pk, self.group.pk)
+        group = self.authorized_client.get(
+            GROUP_LIST_URL
+        ).context['group']
+        self.assertEqual(
+            group.title,
+            self.group.title,
+        )
+        self.assertEqual(
+            group.description,
+            self.group.description,
+        )
+        self.assertEqual(
+            group.slug,
+            self.group.slug,
+        )
+        self.assertEqual(
+            group.pk,
+            self.group.pk,
+        )
 
     def test_profile_has_correct_context(self):
         """Автор в контексте Профиля"""
-        response = self.author_user.get(PROFILE_URL)
+        response = self.author_user.get(
+            PROFILE_URL
+        )
         self.assertEqual(
-            response.context['author'], self.author
+            response.context['author'],
+            self.author,
         )
