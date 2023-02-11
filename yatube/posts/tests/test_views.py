@@ -172,15 +172,14 @@ class TaskPagesTests(TestCase):
             PROFILE_URL: settings.MAX_RECORDS,
             PROFILE_PAGINATE: POSTS_SEC_PAGE,
         }
-        for url, number in urls.items():
+        for url, num in urls.items():
             with self.subTest(
                 url=url,
-                number=number,
+                num=num,
             ):
                 self.assertEqual(
                     len(
-                        self.authorized_client.get(url).context['page_obj']), 
-                            number,
+                        self.authorized_client.get(url).context['page_obj']), num,
                 )
 
     def test_follow_authorized_author(self):
