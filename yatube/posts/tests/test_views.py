@@ -98,7 +98,8 @@ class TaskPagesTests(TestCase):
         for url in correct_context:
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
-                if 'page_obj' in response.context:
+                if 'page_obj' in response.context and len(
+                        response.context['page_obj']) == 1:
                     post = response.context['page_obj'][0]
                 else:
                     post = response.context['post']
@@ -106,6 +107,7 @@ class TaskPagesTests(TestCase):
                 self.assertEqual(post.group, self.post.group)
                 self.assertEqual(post.text, self.post.text)
                 self.assertEqual(post.image, self.post.image)
+                self.assertEqual(post.pk, self.post.pk)
 
     def test_cache_index_page(self):
         """Проверка сохранения кэша для index."""
@@ -174,6 +176,7 @@ class TaskPagesTests(TestCase):
     def test_unfollow_authorized_author(self):
         """Проверка, что авторизованный пользователь может отписаться."""
         self.authorized_client.get(PROFILE_UNFOLLOW_URL)
+        self.assertEqual(Follow.objects.count(), 0)
         self.assertFalse(
             Follow.objects.filter(
                 user=self.user, author=self.author
