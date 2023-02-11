@@ -43,7 +43,7 @@ TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 INDEX_PAGE_PAGINATE = INDEX_URL + '?page=2'
 GROUP2_URL = f'{GROUP2_LIST_URL}?page=2'
 PROFILE_PAGINATE = f'{PROFILE_URL}?page=2'
-FOLLOW_URL = f'{FOLLOW_URL}?page=2'
+FOLLOW_URL_SEC = f'{FOLLOW_URL}?page=2'
 POSTS_SEC_PAGE = 3
 
 
@@ -166,12 +166,12 @@ class TaskPagesTests(TestCase):
         urls = {
             INDEX_URL: settings.MAX_RECORDS,
             INDEX_PAGE_PAGINATE: POSTS_SEC_PAGE,
-            GROUP2_LIST_URL : settings.MAX_RECORDS,
+            GROUP2_LIST_URL: settings.MAX_RECORDS,
             GROUP2_URL: POSTS_SEC_PAGE,
             PROFILE_URL: settings.MAX_RECORDS,
             PROFILE_PAGINATE: POSTS_SEC_PAGE,
             FOLLOW_URL: settings.MAX_RECORDS,
-            FOLLOW_URL: POSTS_SEC_PAGE,
+            FOLLOW_URL_SEC: POSTS_SEC_PAGE,
         }
         for url, number in urls.items():
             with self.subTest(
@@ -180,8 +180,7 @@ class TaskPagesTests(TestCase):
             ):
                 self.assertEqual(
                     len(
-                        self.authorized_client.get(url).context['page_obj']),
-                        number,
+                        self.authorized_client.get(url).context['page_obj']), number,
                 )
 
     def test_follow_authorized_author(self):
