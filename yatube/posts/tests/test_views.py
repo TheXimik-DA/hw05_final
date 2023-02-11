@@ -40,6 +40,12 @@ SMALL_GIF = (
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
+INDEX_PAGE_PAGINATE = INDEX_URL + '?page=2'
+GROUP2_URL = f'{GROUP2_LIST_URL}?page=2'
+PROFILE_PAGINATE = f'{PROFILE_URL}?page=2'
+FOLLOW_URL = f'{FOLLOW_URL}?page=2'
+POSTS_SEC_PAGE = 3
+
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class TaskPagesTests(TestCase):
@@ -143,30 +149,40 @@ class TaskPagesTests(TestCase):
                 self.assertEqual(len(response.context['page_obj']), 0)
 
     def test_paginator(self):
-        cache.clear()
+        Post.objects.all().delete()
+        COUNT = settings.MAX_RECORDS + POSTS_SEC_PAGE
+        Follow.objects.create(
+            author=self.author,
+            user=self.user,
+        )
         Post.objects.bulk_create(
             Post(
+                text=f'Тестовый текст{i}',
                 author=self.author,
-                text=f'{i + 1} test',
-                group=self.group
+                group=self.group2,
             )
-            for i in range(settings.MAX_RECORDS)
+            for i in range(COUNT)
         )
-        urls = (
-            (INDEX_URL, settings.MAX_RECORDS),
-            (INDEX_URL + '?page=2', POSTS_IN_SECOND_PAGES),
-            (GROUP_LIST_URL, settings.MAX_RECORDS),
-            (GROUP_LIST_URL + '?page=2', POSTS_IN_SECOND_PAGES),
-            (PROFILE_URL, settings.MAX_RECORDS),
-            (PROFILE_URL + '?page=2', POSTS_IN_SECOND_PAGES),
-            (FOLLOW_URL, settings.MAX_RECORDS),
-            (FOLLOW_URL + '?page=2', POSTS_IN_SECOND_PAGES)
-        )
-        for url, num in urls:
-            with self.subTest(url=url, num=num):
-                response = self.following_user.get(url)
+        urls = {
+            INDEX_URL: settings.MAX_RECORDS,
+            INDEX_PAGE_PAGINATE: POSTS_SEC_PAGE,
+            GROUP2_LIST_URL : settings.MAX_RECORDS,
+            GROUP2_URL: POSTS_SEC_PAGE,
+            PROFILE_URL: settings.MAX_RECORDS,
+            PROFILE_PAGINATE: POSTS_SEC_PAGE,
+            FOLLOW_URL: settings.MAX_RECORDS,
+            FOLLOW_URL: POSTS_SEC_PAGE,
+        }
+        for url, number in urls.items():
+            with self.subTest(
+                url=url,
+                number=number,
+            ):
                 self.assertEqual(
-                    len(response.context['page_obj']), num)
+                    len(
+                        self.authorized_client.get(url).context['page_obj']),
+                        number,
+                )
 
     def test_follow_authorized_author(self):
         """Проверка, что авторизованный пользователь может подписаться."""
