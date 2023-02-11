@@ -28,6 +28,11 @@ PROFILE_FOLLOW_URL = reverse('posts:profile_follow',
                              kwargs={'username': USERNAME_AUTHOR})
 PROFILE_UNFOLLOW_URL = reverse('posts:profile_unfollow',
                                kwargs={'username': USERNAME_AUTHOR})
+INDEX_PAGE_PAGINATE = INDEX_URL + '?page=2'
+GROUP2_URL = f'{GROUP2_LIST_URL}?page=2'
+PROFILE_PAGINATE = f'{PROFILE_URL}?page=2'
+FOLLOW_URL_SEC = f'{FOLLOW_URL}?page=2'
+POSTS_SEC_PAGE = 5
 
 SMALL_GIF = (
     b'\x47\x49\x46\x38\x39\x61\x02\x00'
@@ -39,12 +44,6 @@ SMALL_GIF = (
 )
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
-
-INDEX_PAGE_PAGINATE = INDEX_URL + '?page=2'
-GROUP2_URL = f'{GROUP2_LIST_URL}?page=2'
-PROFILE_PAGINATE = f'{PROFILE_URL}?page=2'
-FOLLOW_URL_SEC = f'{FOLLOW_URL}?page=2'
-POSTS_SEC_PAGE = 3
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
