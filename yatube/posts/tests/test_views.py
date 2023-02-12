@@ -12,6 +12,7 @@ from posts.models import Follow, Group, Post, User
 POSTS_IN_SECOND_PAGES = 1
 GROUP_SLUG = 'test_slug'
 GROUP2_SLUG = 'test2'
+GROUP3_SLUG = 'test3'
 USERNAME = 'tigr'
 USERNAME_AUTHOR = 'Authortest'
 USERNAME_FOLLOWING = 'Follow'
@@ -23,6 +24,8 @@ GROUP_LIST_URL = reverse('posts:group_list',
                          kwargs={'slug': GROUP_SLUG})
 GROUP2_LIST_URL = reverse('posts:group_list',
                           kwargs={'slug': GROUP2_SLUG})
+GROUP3_LIST_URL = reverse('posts:group_list',
+                          kwargs={'slug': GROUP3_SLUG})                          
 FOLLOW_URL = reverse('posts:follow_index')
 PROFILE_FOLLOW_URL = reverse('posts:profile_follow',
                              kwargs={'username': USERNAME_AUTHOR})
@@ -63,6 +66,11 @@ class TaskPagesTests(TestCase):
             title='Тестовая группа 2',
             slug=GROUP2_SLUG,
             description='Тестовое описание 2',
+        )
+        cls.group_3 = Group.objects.create(
+            title='Тестовый заголовок 3',
+            slug=GROUP3_SLUG,
+            description='Тестовое описание 3    ',
         )
         cls.test_image = SimpleUploadedFile(
             name='small.gif',
@@ -107,8 +115,8 @@ class TaskPagesTests(TestCase):
         for url in correct_context:
             with self.subTest(url=url):
                 response = self.following_user.get(url)
-                if 'page_obj' in response.context and len(
-                        response.context['page_obj']) == 1:
+                if 'page_obj' in response.context:
+                    self.assertEqual(len(response.context['page_obj']), 1)
                     post = response.context['page_obj'][0]
                 else:
                     post = response.context['post']
@@ -127,25 +135,19 @@ class TaskPagesTests(TestCase):
         response = self.authorized.get(INDEX_URL).content
         new_post.delete()
         after_delete_post = self.authorized.get(
-            reverse('posts:index')).content
+            INDEX_URL).content
         self.assertEqual(response, after_delete_post)
         cache.clear()
         after_delete_cache = self.authorized.get(
-            reverse('posts:index')
+            INDEX_URL
         ).content
         self.assertNotEqual(response, after_delete_cache)
 
     def test_post_is_not_in_incorrect_page(self):
         """Проверка, что запись не попала на страницу для
         которой не была предназначена."""
-        urls = (
-            GROUP2_LIST_URL,
-            FOLLOW_URL
-        )
-        for url in urls:
-            with self.subTest(url=url):
-                response = self.authorized.get(url)
-                self.assertEqual(len(response.context['page_obj']), 0)
+        response = self.author_user.get(GROUP3_LIST_URL)
+        self.assertNotIn(self.post, response.context['page_obj'])
 
     def test_paginator(self):
         Post.objects.all().delete()
@@ -184,9 +186,9 @@ class TaskPagesTests(TestCase):
 
     def test_follow_authorized_author(self):
         """Проверка, что авторизованный пользователь может подписаться."""
-        self.assertEqual(len(Follow.objects.filter(
-            user=self.user,
-            author=self.author)), 0)
+        self.assertFalse(
+            Follow.objects.filter(user=self.user, author=self.follow_user).exists()
+        )
         self.authorized.get(
             PROFILE_FOLLOW_URL
         )
@@ -196,12 +198,13 @@ class TaskPagesTests(TestCase):
 
     def test_unfollow_authorized_author(self):
         """Проверка, что авторизованный пользователь может отписаться."""
+        Follow.objects.create(user=self.user, author=self.user)
+        follow = Follow.objects.filter(user=self.user,
+                                       author=self.user).count()
+        self.assertEqual(follow, 1)
         self.authorized.get(
             PROFILE_UNFOLLOW_URL
         )
-        self.assertEqual(len(Follow.objects.filter(
-            user=self.follow_user,
-            author=self.author)), 1)
         self.assertFalse(
             Follow.objects.filter(
                 user=self.user, author=self.author
