@@ -181,7 +181,7 @@ class TaskPagesTests(TestCase):
             ):
                 self.assertEqual(
                     len(self.authorized.get(url).context['page_obj']),
-                       num,
+                    num,
                 )
 
     def test_follow_authorized_author(self):
