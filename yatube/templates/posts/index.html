@@ -8,11 +8,11 @@
     {% cache 20 index_page %}
       {% for post in page_obj %}
           {% include "posts/includes/post.html" %}
+          {% include "posts/includes/group_slug.html" %}
+          {% if not forloop.last %}<hr>{% endif %}
       {% empty %}
         <h3>Отсутствуют записи. Поделитесь чем-нибудь!</h3>
       {% endfor %}
-      {% include "posts/includes/group_slug.html" %}
-      {% if not forloop.last %}<hr>{% endif %}
       {% include "posts/includes/paginator.html" %}
     {% endcache %}
   </div>

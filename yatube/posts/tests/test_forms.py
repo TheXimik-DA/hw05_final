@@ -161,6 +161,11 @@ class PostCreateFormTests(TestCase):
     def test_guest_client_not_create_post_and_redirect(self):
         """Проверяем, что анонимный пользователь не создает запись в Post
         и перенаправляется на страницу /auth/login/ """
+        post_for_edit = Post.objects.create(
+            author=PostCreateFormTests.auth_user,
+            text='Тестовый пост 2',
+        )
+        id_post = post_for_edit.id
         form_data = {
             'text': 'Test text',
             'group': self.group.pk,
@@ -171,9 +176,11 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
+        post_edit = Post.objects.get(pk=id_post)
         self.assertRedirects(
             response, GUEST_CREATE_POST)
-        self.assertNotIn(response, Post.objects.all())
+        self.assertNotEqual(post_edit.text, form_data['text'])
+        
 
     def test_guest_and_authorized_client_dont_edit_alien_post(self):
         """ Проверяем, что любой пользователь кроме автора
@@ -240,9 +247,4 @@ class PostCreateFormTests(TestCase):
         self.assertRedirects(
             response, f'{LOGIN_URL}?next={self.COMMENT_ADD}'
         )
-        self.assertFalse(
-            Comment.objects.filter(
-                text=form_data['text'],
-            ).exists()
-        )
-        self.assertEqual(Comment.objects.count(), comments_count)
+        self.assertFalse(Comment.objects.exists())
