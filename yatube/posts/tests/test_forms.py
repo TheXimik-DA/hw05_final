@@ -180,7 +180,7 @@ class PostCreateFormTests(TestCase):
         self.assertRedirects(
             response, GUEST_CREATE_POST)
         self.assertNotEqual(post_edit.text, form_data['text'])
-        
+
     def test_guest_and_authorized_client_dont_edit_alien_post(self):
         """ Проверяем, что любой пользователь кроме автора
         не может редактировать пост."""
