@@ -180,21 +180,17 @@ class TaskPagesTests(TestCase):
                 num=num,
             ):
                 self.assertEqual(
-                  len(self.authorized.get(url).context['page_obj']), num,)
+                len(self.authorized.get(url).context['page_obj']), num,)
 
     def test_follow_authorized_author(self):
         """Проверка, что авторизованный пользователь может подписаться."""
         self.assertFalse(
             Follow.objects.filter(
                 user=self.user,
-                author=self.follow_user).exists()
-        )
-        self.authorized.get(
-            PROFILE_FOLLOW_URL
-        )
+                author=self.follow_user).exists())
+        self.authorized.get(PROFILE_FOLLOW_URL)
         self.assertTrue(
-            Follow.objects.filter(user=self.user, author=self.author).exists()
-        )
+            Follow.objects.filter(user=self.user, author=self.author).exists())
 
     def test_unfollow_authorized_author(self):
         """Проверка, что авторизованный пользователь может отписаться."""
