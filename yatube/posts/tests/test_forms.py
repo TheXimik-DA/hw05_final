@@ -235,7 +235,6 @@ class PostCreateFormTests(TestCase):
     def test_guest_client_not_comment_post(self):
         """Проверяем, что незарегистрированный пользователь
         не может комментировать записи"""
-        comments_count = Comment.objects.count()
         form_data = {
             'text': 'Comment guest'
         }
