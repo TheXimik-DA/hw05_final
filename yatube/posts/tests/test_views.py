@@ -175,12 +175,8 @@ class TaskPagesTests(TestCase):
             PROFILE_PAGINATE: POSTS_SEC_PAGE,
         }
         for url, num in urls.items():
-            with self.subTest(
-                url=url,
-                num=num,
-            ):
-                self.assertEqual(
-                    len(self.authorized.get(url).context['page_obj']), num,)
+           with self.subTest(url=url, num=num):
+             self.assertEqual(len(self.authorized.get(url).context['page_obj']), num)
 
     def test_follow_authorized_author(self):
         """Проверка, что авторизованный пользователь может подписаться."""
