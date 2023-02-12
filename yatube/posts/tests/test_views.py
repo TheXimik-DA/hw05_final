@@ -25,7 +25,7 @@ GROUP_LIST_URL = reverse('posts:group_list',
 GROUP2_LIST_URL = reverse('posts:group_list',
                           kwargs={'slug': GROUP2_SLUG})
 GROUP3_LIST_URL = reverse('posts:group_list',
-                          kwargs={'slug': GROUP3_SLUG})                          
+                          kwargs={'slug': GROUP3_SLUG})
 FOLLOW_URL = reverse('posts:follow_index')
 PROFILE_FOLLOW_URL = reverse('posts:profile_follow',
                              kwargs={'username': USERNAME_AUTHOR})
@@ -180,14 +180,18 @@ class TaskPagesTests(TestCase):
                 num=num,
             ):
                 self.assertEqual(
-                    len(self.authorized.get(url).context['page_obj']), num,
-            )
+                    len(
+                        self.authorized.get(url).context['page_obj']
+                    ),
+                        num,
+                )
 
     def test_follow_authorized_author(self):
         """Проверка, что авторизованный пользователь может подписаться."""
         self.assertFalse(
-            Follow.objects.filter(user=self.user,
-            author=self.follow_user).exists()
+            Follow.objects.filter(
+                user=self.user,
+                author=self.follow_user).exists()
         )
         self.authorized.get(
             PROFILE_FOLLOW_URL
