@@ -113,8 +113,12 @@ class Follow(models.Model):
             models.UniqueConstraint(
                 fields=['user', 'author'],
                 name='unique_author_user_following',
-            )
+            ),
+            models.CheckConstraint(
+                check=~models.Q(user=models.F('author')),
+                name='check_not_self'),
         ]
+
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
 

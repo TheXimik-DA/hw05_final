@@ -146,8 +146,14 @@ class TaskPagesTests(TestCase):
     def test_post_is_not_in_incorrect_page(self):
         """Проверка, что запись не попала на страницу для
         которой не была предназначена."""
-        response = self.author_user.get(GROUP3_LIST_URL)
-        self.assertNotIn(self.post, response.context['page_obj'])
+        urls = (
+            GROUP2_LIST_URL,
+            FOLLOW_URL
+        )
+        for url in urls:
+            with self.subTest(url=url):
+                response = self.authorized.get(url)
+                self.assertNotIn(self.post, response.context['page_obj'])
 
     def test_paginator(self):
         Post.objects.all().delete()
@@ -194,16 +200,17 @@ class TaskPagesTests(TestCase):
 
     def test_unfollow_authorized_author(self):
         """Проверка, что авторизованный пользователь может отписаться."""
-        Follow.objects.create(user=self.user, author=self.user)
-        follow = Follow.objects.filter(user=self.user,
-                                       author=self.user).count()
-        self.assertEqual(follow, 1)
+        Follow.objects.create(
+            author=self.author,
+            user=self.user,
+        )
         self.authorized.get(
             PROFILE_UNFOLLOW_URL
         )
         self.assertFalse(
             Follow.objects.filter(
-                user=self.user, author=self.author
+                user=self.user,
+                author=self.author,
             ).exists()
         )
 
