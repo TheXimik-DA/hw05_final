@@ -70,7 +70,7 @@ class TaskPagesTests(TestCase):
         cls.group_3 = Group.objects.create(
             title='Тестовый заголовок 3',
             slug=GROUP3_SLUG,
-            description='Тестовое описание 3    ',
+            description='Тестовое описание 3',
         )
         cls.test_image = SimpleUploadedFile(
             name='small.gif',
