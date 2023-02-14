@@ -161,13 +161,11 @@ class PostCreateFormTests(TestCase):
     def test_guest_client_not_create_post_and_redirect(self):
         """Проверяем, что анонимный пользователь не создает запись в Post
         и перенаправляется на страницу /auth/login/ """
-        post_for_edit = Post.objects.create(
-            author=PostCreateFormTests.auth_user,
-            text='Тестовый пост 2',
+        post_set = set(
+            Post.objects.all()
         )
-        id_post = post_for_edit.id
         form_data = {
-            'text': 'Test text',
+            'text': 'Тестовый текст',
             'group': self.group.pk,
             'image': self.test_image
         }
@@ -176,10 +174,18 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        post_edit = Post.objects.get(pk=id_post)
         self.assertRedirects(
-            response, GUEST_CREATE_POST)
-        self.assertNotEqual(post_edit.text, form_data['text'])
+            response, GUEST_CREATE_POST
+        )
+        post_new_set = set(
+            Post.objects.all()
+        )
+        difference_sets_of_posts = post_new_set.difference(
+            post_set
+        )
+        self.assertEqual(
+            len(difference_sets_of_posts), 0
+        )
 
     def test_guest_and_authorized_client_dont_edit_alien_post(self):
         """ Проверяем, что любой пользователь кроме автора
