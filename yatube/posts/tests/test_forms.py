@@ -223,23 +223,29 @@ class PostCreateFormTests(TestCase):
     def test_authorized_client_comments_post(self):
         """Проверяем, что авторизованный пользователь
         может комментировать записи"""
-        form_data = {
-            'text': 'Text comment'
-        }
+        comments_count = Comment.objects.count()
+        post = Post.objects.create(
+            text='Текст поста для редактирования',
+            author=self.author)
+        form_data = {'text': 'Тестовый коментарий'}
         response = self.authorized_client.post(
-            self.COMMENT_ADD,
+            reverse(
+                'posts:add_comment',
+                kwargs={'post_id': post.id}),
             data=form_data,
-            follow=True
-        )
-        comment = Comment.objects.first()
+            follow=True)
+        comment = Comment.objects.latest('id')
+        self.assertEqual(Comment.objects.count(), comments_count + 1)
         self.assertEqual(comment.text, form_data['text'])
         self.assertEqual(comment.author, self.auth_user)
-        self.assertEqual(comment.post, self.post)
-        self.assertRedirects(response, self.POST_DETAIL_URL)
+        self.assertEqual(comment.post_id, post.id)
+        self.assertRedirects(
+            response, reverse('posts:post_detail', args={post.id}))
 
     def test_guest_client_not_comment_post(self):
         """Проверяем, что незарегистрированный пользователь
         не может комментировать записи"""
+        Comment.objects.all().delete()
         form_data = {
             'text': 'Comment guest'
         }
