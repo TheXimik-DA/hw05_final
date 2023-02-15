@@ -13,7 +13,7 @@ ALLOWED_HOSTS = [
     '[::1]',
     'testserver',
     'www.TheXimik.pythonanywhere.com',
-    'TheXimik.pythonanywhere.com',
+    'TheXimik   .pythonanywhere.com',
 ]
 
 CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
